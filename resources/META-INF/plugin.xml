@@ -1,0 +1,43 @@
+<idea-plugin version="2">
+  <id>com.your.company.unique.plugin.id</id>
+  <name>CLang tidy</name>
+  <version>1.0</version>
+  <vendor email="support@yourcompany.com" url="http://www.yourcompany.com">YourCompany</vendor>
+
+  <description><![CDATA[
+      A plugin to apply clang-tidy transforms to your project.
+    ]]></description>
+
+  <change-notes><![CDATA[
+      Add change notes here.<br>
+      <em>most HTML tags may be used</em>
+    ]]>
+  </change-notes>
+
+  <!-- please see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/build_number_ranges.html for description -->
+  <idea-version since-build="141.0"/>
+
+  <depends>com.intellij.modules.clion</depends>
+
+  <extensions defaultExtensionNs="com.intellij">
+    <localInspection
+            implementationClass="clangtidy.inspection.CLangTidyLocalInspection"
+            displayName="CLangTidyLocal"
+            groupName="C/C++"
+            id="CLangTidyLocalInspection"
+            level="WARNING"
+            enabledByDefault="false"
+    />
+
+    <applicationConfigurable
+            instance="clangtidy.OptionTab"
+    />
+  </extensions>
+
+  <actions>
+    <action id="clangtidy.modernize.CLangModernizeAction" class="clangtidy.modernize.CLangModernizeAction" text="run CLang modernize">
+      <add-to-group group-id="RefactoringMenu" anchor="last"/>
+    </action>
+  </actions>
+
+</idea-plugin>
