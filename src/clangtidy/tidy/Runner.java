@@ -22,6 +22,7 @@
 package clangtidy.tidy;
 
 import clangtidy.Options;
+import clangtidy.yaml.YamlReader;
 import com.intellij.codeInspection.ProblemHighlightType;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VfsUtilCore;
@@ -33,6 +34,7 @@ import org.jetbrains.annotations.NotNull;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -68,11 +70,13 @@ public class Runner {
 	private boolean					ready = false;
 
 	protected List<Issue>			issues;
+	protected List<Fix>				fixes;
 
 
 	protected Runner() {
 		sourcePaths = new ArrayList<>();
 		issues = new ArrayList<>();
+		fixes = new ArrayList<>();
 	}
 
 
@@ -149,8 +153,18 @@ public class Runner {
 	}
 
 
+	public List<Fix> getFixes() {
+		return fixes;
+	}
+
+
 	public void clearResults() {
+		if (fixesTargetFile.exists()) {
+			fixesTargetFile.delete();
+		}
+
 		issues.clear();
+		fixes.clear();
 	}
 
 
@@ -181,7 +195,7 @@ public class Runner {
 
 			case StoreFixes: {
 				if (fixesTargetFile != null) {
-					args.add("-export-fixes=\"" + fixesTargetFile.getPath() + "\"");
+					args.add("-export-fixes=\"" + fixesTargetFile.getPath().replace('\\', '/') + "\"");
 				}
 
 				break;
@@ -264,7 +278,69 @@ public class Runner {
 			e.printStackTrace();
 		}
 
+		if (fixIssues == FixIssues.StoreFixes) {
+			if (fixesTargetFile.exists()) {
+				readFixesList(fixesTargetFile);
+				fixesTargetFile.delete();
+			}
+		}
+
 		return process.exitValue() == 0;
+	}
+
+
+	protected void readFixesList(File yamlFile) {
+		try {
+			Object yaml = new YamlReader(yamlFile).getRootObject();
+			if (yaml != null && yaml instanceof Map) {
+				Map<String,Object> map = (Map<String,Object>)yaml;
+
+				if (map.containsKey("Replacements")) {
+					Object replacements = map.get("Replacements");
+
+					if (replacements != null && replacements instanceof List) {
+						List<Object> list = (List<Object>)replacements;
+
+						for(Object o : list) {
+							if (o instanceof Map) {
+								Fix fix = parseFix((Map<String,Object>)o);
+
+								if (fix != null) {
+									fixes.add(fix);
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+
+	private static Fix parseFix(Map<String,Object> map) {
+		Object fileName		= map.get("FilePath");
+		Object length		= map.get("Length");
+		Object offset		= map.get("Offset");
+		Object replacement	= map.get("ReplacementText");
+
+		if (
+				fileName	!= null
+			&&	replacement	!= null
+			&&	length		!= null	&& length instanceof Number
+			&&	offset		!= null && offset instanceof Number
+		) {
+			return new Fix(
+					new File(fileName.toString()),
+					((Number)offset).intValue(),
+					((Number)length).intValue(),
+					replacement.toString()
+			);
+		}
+
+		return null;
 	}
 
 

@@ -22,6 +22,7 @@
 package clangtidy.modernize;
 
 import clangtidy.tidy.CompileCommandsNotFoundException;
+import clangtidy.tidy.FixProjectHelper;
 import clangtidy.tidy.Runner;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
@@ -46,13 +47,17 @@ public class CLangModernizeAction extends AnAction {
 
 				if (files != null && cMakeWorkspace != null) {
 					Runner runner = new Runner(project);
-					runner.setFixIssues(Runner.FixIssues.FixImmediately);
+					runner.setFixIssues(Runner.FixIssues.StoreFixes);
 
 					for(VirtualFile file : files) {
 						runner.addSourcePath(file);
 					}
 
-					runner.run();
+					boolean success = runner.run();
+					if (success && !runner.getFixes().isEmpty()) {
+						FixProjectHelper helper = FixProjectHelper.create(project, runner.getFixes());
+						helper.applyAll();
+					}
 				}
 			}
 			catch (CompileCommandsNotFoundException e) {
