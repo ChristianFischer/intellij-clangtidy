@@ -91,6 +91,10 @@ public class FixProjectHelper {
 	}
 
 
+	public Project getProject() {
+		return project;
+	}
+
 	public int getTotalFilesToFix() {
 		return totalFilesToFix;
 	}
@@ -104,6 +108,14 @@ public class FixProjectHelper {
 	}
 
 
+	public File getNextFileToApply() {
+		if (!fixesPerFile.isEmpty()) {
+			return fixesPerFile.keySet().iterator().next();
+		}
+
+		return null;
+	}
+
 	public void applyAll() {
 		while(hasFixesToApply()) {
 			applyNext();
@@ -113,23 +125,26 @@ public class FixProjectHelper {
 
 	public boolean applyNext() {
 		if (!fixesPerFile.isEmpty()) {
-			File nextFile = fixesPerFile.keySet().iterator().next();
-			PerFile perFile = fixesPerFile.get(nextFile);
-			fixesPerFile.remove(nextFile);
-
-			boolean successful = apply(nextFile, perFile);
-
-			if (!successful) {
-				failedFiles.add(nextFile);
-				failedFixes.addAll(perFile.fixes);
-			}
-
-			return successful;
+			return applyForFile(getNextFileToApply());
 		}
 
 		return false;
 	}
 
+
+	public boolean applyForFile(@NotNull File nextFile) {
+		PerFile perFile = fixesPerFile.get(nextFile);
+		fixesPerFile.remove(nextFile);
+
+		boolean successful = apply(nextFile, perFile);
+
+		if (!successful) {
+			failedFiles.add(nextFile);
+			failedFixes.addAll(perFile.fixes);
+		}
+
+		return successful;
+	}
 
 
 	private boolean apply(@NotNull File file, @NotNull PerFile fixesPerFile) {
@@ -138,16 +153,16 @@ public class FixProjectHelper {
 			return false;
 		}
 
-		Document document = FileDocumentManager.getInstance().getDocument(vfile);
-		if (document == null) {
-			return false;
-		}
-
 		WriteCommandAction.runWriteCommandAction(
 				project,
 				"clang-tidy",
 				null,
 				() -> {
+					Document document = FileDocumentManager.getInstance().getDocument(vfile);
+					if (document == null) {
+						return;
+					}
+
 					for(Fix fix : fixesPerFile.fixes) {
 						document.replaceString(
 								fixesPerFile.offset + fix.getOffset(),

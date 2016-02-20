@@ -23,7 +23,7 @@ package clangtidy.inspection;
 
 import clangtidy.tidy.CompileCommandsNotFoundException;
 import clangtidy.tidy.Issue;
-import clangtidy.tidy.Runner;
+import clangtidy.tidy.Scanner;
 import com.intellij.codeInspection.InspectionManager;
 import com.intellij.codeInspection.LocalInspectionTool;
 import com.intellij.codeInspection.ProblemDescriptor;
@@ -37,6 +37,7 @@ import com.jetbrains.cidr.lang.psi.impl.OCFileImpl;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
@@ -75,9 +76,8 @@ public class CLangTidyLocalInspection extends LocalInspectionTool {
 		try {
 			VirtualFile vfile = file.getVirtualFile();
 
-			Runner runner = new Runner(file.getProject());
-			runner.addSourcePath(vfile);
-			boolean success = runner.run();
+			Scanner runner = new Scanner(file.getProject());
+			boolean success = runner.runOnFiles(vfile);
 
 			List<Issue> issues = runner.getIssues();
 			List<ProblemDescriptor> problemsList = new ArrayList<>();
@@ -112,7 +112,7 @@ public class CLangTidyLocalInspection extends LocalInspectionTool {
 				}
 			}
 		}
-		catch (CompileCommandsNotFoundException e) {
+		catch (CompileCommandsNotFoundException | IOException e) {
 			e.printStackTrace();
 		}
 

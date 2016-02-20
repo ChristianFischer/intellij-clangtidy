@@ -25,9 +25,7 @@ import clangtidy.Options;
 import clangtidy.yaml.YamlReader;
 import com.intellij.codeInspection.ProblemHighlightType;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.vfs.VfsUtilCore;
 import com.intellij.openapi.vfs.VirtualFile;
-import com.intellij.openapi.vfs.VirtualFileVisitor;
 import com.jetbrains.cidr.cpp.cmake.workspace.CMakeWorkspace;
 import org.jetbrains.annotations.NotNull;
 
@@ -38,12 +36,11 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 /**
  * A helper class to run the clang-tidy executable and parse it's output.
  */
-public class Runner {
+public class Scanner {
 	//language=RegExp
 	protected final static Pattern LINE_ISSUE_PATTERN
 			= Pattern.compile("^(.*):(\\d+):(\\d+):\\s*(warning|error):(.*)\\s*\\[(.*)\\]$");
@@ -65,7 +62,6 @@ public class Runner {
 	protected CMakeWorkspace		cMakeWorkspace;
 	protected File					compileCommandsFile;
 	protected File					fixesTargetFile;
-	protected List<VirtualFile>		sourcePaths;
 	protected FixIssues				fixIssues = FixIssues.DontFix;
 	private boolean					ready = false;
 
@@ -73,14 +69,13 @@ public class Runner {
 	protected List<Fix>				fixes;
 
 
-	protected Runner() {
-		sourcePaths = new ArrayList<>();
+	protected Scanner() {
 		issues = new ArrayList<>();
 		fixes = new ArrayList<>();
 	}
 
 
-	public Runner(Project project) throws CompileCommandsNotFoundException {
+	public Scanner(Project project) throws CompileCommandsNotFoundException {
 		this();
 
 		CMakeWorkspace cMakeWorkspace = CMakeWorkspace.getInstance(project);
@@ -119,26 +114,6 @@ public class Runner {
 	}
 
 
-	public void addSourcePath(VirtualFile path) {
-		if (path.isDirectory()) {
-			VfsUtilCore.visitChildrenRecursively(
-					path,
-					new VirtualFileVisitor() {
-						@Override
-						public boolean visitFile(@NotNull VirtualFile file) {
-							addSourcePath(file);
-
-							return super.visitFile(file);
-						}
-					}
-			);
-		}
-		else {
-			sourcePaths.add(path);
-		}
-	}
-
-
 	public void setFixIssues(FixIssues fixIssues) {
 		this.fixIssues = fixIssues;
 	}
@@ -168,19 +143,23 @@ public class Runner {
 	}
 
 
-	public boolean run() {
+	public boolean runOnFiles(VirtualFile file) throws IOException {
 		if (!ready) {
 			throw new IllegalStateException("CLangTidy runner not properly configured");
 		}
 
-		if (sourcePaths.isEmpty()) {
-			throw new IllegalStateException("No source paths given");
+		if (!file.exists()) {
+			throw new FileNotFoundException();
+		}
+
+		if (file.isDirectory()) {
+			throw new IOException("File is a directory.");
 		}
 
 		List<String> args = new ArrayList<>();
 		args.add(Options.getCLangTidyExe());
 		args.add("-p");
-		args.add(compileCommandsFile.getParentFile().getAbsolutePath());
+		args.add("\"" + compileCommandsFile.getParentFile().getAbsolutePath() + "\"");
 		args.add("-checks=*");
 
 		switch(fixIssues) {
@@ -203,10 +182,7 @@ public class Runner {
 		}
 
 		// add all source files
-		args.addAll(sourcePaths.stream().map(VirtualFile::getPath).collect(Collectors.toList()));
-
-		// clear any recent results before beginning
-		clearResults();
+		args.add("\"" + file.getPath() + "\"");
 
 		System.out.println("Run command: " + String.join(" ", args));
 

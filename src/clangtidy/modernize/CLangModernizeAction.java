@@ -21,12 +21,16 @@
  */
 package clangtidy.modernize;
 
+import clangtidy.tidy.ApplyFixesBackgroundTask;
 import clangtidy.tidy.CompileCommandsNotFoundException;
-import clangtidy.tidy.FixProjectHelper;
-import clangtidy.tidy.Runner;
+import clangtidy.tidy.Scanner;
+import clangtidy.tidy.ScannerBackgroundTask;
+import com.intellij.notification.Notification;
+import com.intellij.notification.NotificationType;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.CommonDataKeys;
+import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.jetbrains.cidr.cpp.cmake.workspace.CMakeWorkspace;
@@ -45,19 +49,36 @@ public class CLangModernizeAction extends AnAction {
 				CMakeWorkspace cMakeWorkspace = CMakeWorkspace.getInstance(project);
 				VirtualFile[] files = CommonDataKeys.VIRTUAL_FILE_ARRAY.getData(event.getDataContext());
 
+				// save all open documents
+				ApplicationManager.getApplication().saveAll();
+
 				if (files != null && cMakeWorkspace != null) {
-					Runner runner = new Runner(project);
-					runner.setFixIssues(Runner.FixIssues.StoreFixes);
+					Scanner scanner = new Scanner(project);
+					scanner.setFixIssues(Scanner.FixIssues.StoreFixes);
+
+					ScannerBackgroundTask task = new ScannerBackgroundTask(project, scanner);
 
 					for(VirtualFile file : files) {
-						runner.addSourcePath(file);
+						task.addFile(file);
 					}
 
-					boolean success = runner.run();
-					if (success && !runner.getFixes().isEmpty()) {
-						FixProjectHelper helper = FixProjectHelper.create(project, runner.getFixes());
-						helper.applyAll();
-					}
+					task.setOnSuccessCallback((Scanner sc) -> {
+						if (sc.getFixes().isEmpty()) {
+							Notification notification = new Notification(
+									"groupDisplayId",
+									"clang-tidy",
+									"clang-tidy finished without finding any issues.",
+									NotificationType.INFORMATION
+							);
+
+							notification.notify(project);
+						}
+						else {
+							ApplyFixesBackgroundTask.start(project, scanner.getFixes());
+						}
+					});
+
+					task.queue();
 				}
 			}
 			catch (CompileCommandsNotFoundException e) {
