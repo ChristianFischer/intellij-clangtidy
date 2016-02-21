@@ -21,6 +21,8 @@
  */
 package clangtidy.tidy;
 
+import com.intellij.openapi.util.TextRange;
+
 import java.io.File;
 
 /**
@@ -28,15 +30,13 @@ import java.io.File;
  */
 public class Fix {
 	private File		file;
-	private int			offset;
-	private int			length;
+	private TextRange	range;
 	private String		replacement;
 
 
-	public Fix(File file, int offset, int length, String replacement) {
+	public Fix(File file, TextRange range, String replacement) {
 		this.file			= file;
-		this.offset			= offset;
-		this.length			= length;
+		this.range			= range;
 		this.replacement	= replacement;
 	}
 
@@ -45,12 +45,12 @@ public class Fix {
 		return file;
 	}
 
-	public int getOffset() {
-		return offset;
+	public void setTextRange(TextRange range) {
+		this.range = range;
 	}
 
-	public int getLength() {
-		return length;
+	public TextRange getTextRange() {
+		return range;
 	}
 
 	public String getReplacement() {

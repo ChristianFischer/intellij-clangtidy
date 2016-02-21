@@ -25,6 +25,7 @@ import clangtidy.Options;
 import clangtidy.yaml.YamlReader;
 import com.intellij.codeInspection.ProblemHighlightType;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.util.TextRange;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.jetbrains.cidr.cpp.cmake.workspace.CMakeWorkspace;
 import org.jetbrains.annotations.NotNull;
@@ -308,10 +309,12 @@ public class Scanner {
 			&&	length		!= null	&& length instanceof Number
 			&&	offset		!= null && offset instanceof Number
 		) {
+			int iOffset = ((Number)offset).intValue();
+			int iLength = ((Number)length).intValue();
+
 			return new Fix(
 					new File(fileName.toString()),
-					((Number)offset).intValue(),
-					((Number)length).intValue(),
+					TextRange.create(iOffset, iOffset + iLength),
 					replacement.toString()
 			);
 		}

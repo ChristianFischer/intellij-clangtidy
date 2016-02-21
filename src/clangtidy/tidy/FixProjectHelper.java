@@ -25,15 +25,16 @@ import com.intellij.openapi.command.WriteCommandAction;
 import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.fileEditor.FileDocumentManager;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.util.TextRange;
 import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.openapi.vfs.VirtualFile;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.*;
 
 
 /**
@@ -153,6 +154,8 @@ public class FixProjectHelper {
 			return false;
 		}
 
+		prepareFile(file, fixesPerFile);
+
 		WriteCommandAction.runWriteCommandAction(
 				project,
 				"clang-tidy",
@@ -165,17 +168,73 @@ public class FixProjectHelper {
 
 					for(Fix fix : fixesPerFile.fixes) {
 						document.replaceString(
-								fixesPerFile.offset + fix.getOffset(),
-								fixesPerFile.offset + fix.getOffset() + fix.getLength(),
+								fixesPerFile.offset + fix.getTextRange().getStartOffset(),
+								fixesPerFile.offset + fix.getTextRange().getEndOffset(),
 								fix.getReplacement()
 						);
 
-						fixesPerFile.offset -= fix.getLength();
+						// offsets will have changed after applying other changes
+						fixesPerFile.offset -= fix.getTextRange().getLength();
 						fixesPerFile.offset += fix.getReplacement().length();
 					}
 				}
 		);
 
 		return true;
+	}
+
+
+	private void prepareFile(File file, PerFile fixesPerFile) {
+		// ensure, all fixes are sorted in ascending order
+		Collections.sort(
+				fixesPerFile.fixes,
+				(Fix a, Fix b) -> a.getTextRange().getStartOffset() - b.getTextRange().getStartOffset()
+		);
+
+		// since Intellij uses only \n for linebreaks, but clang-tidy is using the file's native
+		// linebreak style for it's offsets, we have to convert them into \n linebreak offsets
+		try(InputStream in = new FileInputStream(file)) {
+			List<Integer> ignorableLineFeeds = new ArrayList<>();
+
+			{
+				int currentOffset = 0;
+				int b;
+
+				while((b = in.read()) != -1) {
+					++currentOffset;
+
+					if (b == '\r') {
+						b = in.read();
+						++currentOffset;
+
+						if (b == -1) {
+							break;
+						}
+
+						// after a combination of \r and \n, the \r has to be ignored
+						if (b == '\n') {
+							ignorableLineFeeds.add(currentOffset);
+						}
+					}
+				}
+			}
+
+			for(Fix fix : fixesPerFile.fixes) {
+				final int startOffset = fix.getTextRange().getStartOffset();
+				final int endOffset   = fix.getTextRange().getEndOffset();
+
+				long startOffsetCorrection = ignorableLineFeeds.stream().filter((Integer i) -> (i <= startOffset)).count();
+				long endOffsetCorrection   = ignorableLineFeeds.stream().filter((Integer i) -> (i <= endOffset)).count();
+
+				fix.setTextRange(TextRange.create(
+						(int)(startOffset - startOffsetCorrection),
+						(int)(endOffset   - endOffsetCorrection)
+				));
+			}
+		}
+		catch(IOException e) {
+			e.printStackTrace();
+		}
+
 	}
 }
