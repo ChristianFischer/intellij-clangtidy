@@ -24,13 +24,10 @@ package clangtidy.tidy;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.vfs.VfsUtilCore;
 import com.intellij.openapi.vfs.VirtualFile;
-import com.intellij.openapi.vfs.VirtualFileVisitor;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -44,7 +41,7 @@ public class ScannerBackgroundTask extends Task.Modal {
 	private Scanner		scanner;
 	private boolean		cancelled;
 
-	private List<VirtualFile>	files;
+	private SourceFileSelection	files;
 	private Consumer<Scanner>	onSuccessCallback;
 
 
@@ -54,30 +51,11 @@ public class ScannerBackgroundTask extends Task.Modal {
 		this.project	= project;
 		this.scanner	= scanner;
 		this.cancelled	= false;
-
-		this.files		= new ArrayList<>();
 	}
 
 
-	public void addFile(VirtualFile path) {
-		if (path.isDirectory()) {
-			VfsUtilCore.visitChildrenRecursively(
-					path,
-					new VirtualFileVisitor() {
-						@Override
-						public boolean visitFile(@NotNull VirtualFile file) {
-							if (!file.isDirectory()) {
-								addFile(file);
-							}
-
-							return super.visitFile(file);
-						}
-					}
-			);
-		}
-		else {
-			files.add(path);
-		}
+	public void setSourceFiles(SourceFileSelection files) {
+		this.files = files;
 	}
 
 
@@ -91,10 +69,12 @@ public class ScannerBackgroundTask extends Task.Modal {
 		indicator.setFraction(0.0);
 		indicator.setText("starting...");
 
-		int filesTotal		= files.size();
+		List<VirtualFile> filesToProcess = files.getFilesToProcess();
+
+		int filesTotal		= filesToProcess.size();
 		int filesProcessed	= 0;
 
-		for(VirtualFile file : files) {
+		for(VirtualFile file : filesToProcess) {
 			indicator.setText(file.getPath());
 			boolean successful;
 
