@@ -66,13 +66,8 @@ public class Scanner {
 	protected FixIssues				fixIssues = FixIssues.DontFix;
 	private boolean					ready = false;
 
-	protected List<Issue>			issues;
-	protected List<Fix>				fixes;
-
 
 	protected Scanner() {
-		issues = new ArrayList<>();
-		fixes = new ArrayList<>();
 	}
 
 
@@ -124,27 +119,15 @@ public class Scanner {
 	}
 
 
-	public List<Issue> getIssues() {
-		return issues;
-	}
-
-
-	public List<Fix> getFixes() {
-		return fixes;
-	}
-
 
 	public void clearResults() {
 		if (fixesTargetFile.exists()) {
 			fixesTargetFile.delete();
 		}
-
-		issues.clear();
-		fixes.clear();
 	}
 
 
-	public boolean runOnFiles(VirtualFile file) throws IOException {
+	public boolean runOnFiles(@NotNull VirtualFile file, ScannerResult result) throws IOException {
 		if (!ready) {
 			throw new IllegalStateException("CLangTidy runner not properly configured");
 		}
@@ -190,6 +173,9 @@ public class Scanner {
 		ProcessBuilder pb = new ProcessBuilder(args);
 		Process process = null;
 
+		final boolean[] readingFileFailed = new boolean[]{ false };
+		boolean success = false;
+
 		try {
 			process = pb.start();
 		}
@@ -224,7 +210,15 @@ public class Scanner {
 						issue.message			= m.group(5);
 						issue.group				= m.group(6);
 
-						issues.add(issue);
+						if (result != null) {
+							result.addIssue(issue);
+						}
+					}
+					else if (line.startsWith("error: error reading")) {
+						// failed to read an input file
+						// this may be a hint to an issue on windows, where paths with backslash separators
+						// within the compile_commands.json are not recognized
+						readingFileFailed[0] = true;
 					}
 				}
 		);
@@ -235,7 +229,11 @@ public class Scanner {
 		);
 
 		try {
-			process.waitFor();
+			int returnCode = process.waitFor();
+
+			if (returnCode == 0) {
+				success = true;
+			}
 		}
 		catch(InterruptedException e) {
 			e.printStackTrace();
@@ -255,18 +253,20 @@ public class Scanner {
 			e.printStackTrace();
 		}
 
-		if (fixIssues == FixIssues.StoreFixes) {
-			if (fixesTargetFile.exists()) {
-				readFixesList(fixesTargetFile);
-				fixesTargetFile.delete();
-			}
+		if (
+				fixIssues == FixIssues.StoreFixes
+			&&	result != null
+			&&	fixesTargetFile.exists()
+		) {
+			readFixesList(fixesTargetFile, result);
+			fixesTargetFile.delete();
 		}
 
-		return process.exitValue() == 0;
+		return success && !readingFileFailed[0];
 	}
 
 
-	protected void readFixesList(File yamlFile) {
+	protected void readFixesList(@NotNull File yamlFile, @NotNull ScannerResult result) {
 		try {
 			Object yaml = new YamlReader(yamlFile).getRootObject();
 			if (yaml != null && yaml instanceof Map) {
@@ -283,7 +283,7 @@ public class Scanner {
 								Fix fix = parseFix((Map<String,Object>)o);
 
 								if (fix != null) {
-									fixes.add(fix);
+									result.addFix(fix);
 								}
 							}
 						}

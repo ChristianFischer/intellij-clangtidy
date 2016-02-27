@@ -60,10 +60,10 @@ public class FixProjectHelper {
 
 
 
-	public static FixProjectHelper create(Project project, List<Fix> fixes) {
+	public static FixProjectHelper create(@NotNull Project project, @NotNull ScannerResult scannerResult) {
 		FixProjectHelper helper = new FixProjectHelper(project);
 
-		for(Fix fix : fixes) {
+		for(Fix fix : scannerResult.getFixes()) {
 			File file = fix.getFile();
 			PerFile target;
 

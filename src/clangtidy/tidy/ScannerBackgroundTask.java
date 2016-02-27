@@ -21,6 +21,7 @@
  */
 package clangtidy.tidy;
 
+import clangtidy.util.NotificationFactory;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.Project;
@@ -29,7 +30,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 
 /**
  * Background task to scan for fixes within a given file set.
@@ -37,20 +38,22 @@ import java.util.function.Consumer;
 public class ScannerBackgroundTask extends Task.Modal {
 	public final static String TITLE	= "clang-tidy";
 
-	private Project		project;
-	private Scanner		scanner;
-	private boolean		cancelled;
+	private Project			project;
+	private Scanner			scanner;
+	private ScannerResult	scannerResult;
+	private boolean			cancelled;
 
 	private SourceFileSelection	files;
-	private Consumer<Scanner>	onSuccessCallback;
+	private BiConsumer<Scanner, ScannerResult> onSuccessCallback;
 
 
 	public ScannerBackgroundTask(@NotNull Project project, @NotNull Scanner scanner) {
 		super(project, TITLE, true);
 
-		this.project	= project;
-		this.scanner	= scanner;
-		this.cancelled	= false;
+		this.project		= project;
+		this.scanner		= scanner;
+		this.scannerResult	= new ScannerResult();
+		this.cancelled		= false;
 	}
 
 
@@ -59,7 +62,7 @@ public class ScannerBackgroundTask extends Task.Modal {
 	}
 
 
-	public void setOnSuccessCallback(Consumer<Scanner> onSuccessCallback) {
+	public void setOnSuccessCallback(BiConsumer<Scanner, ScannerResult> onSuccessCallback) {
 		this.onSuccessCallback = onSuccessCallback;
 	}
 
@@ -79,11 +82,16 @@ public class ScannerBackgroundTask extends Task.Modal {
 			boolean successful;
 
 			try {
-				successful = scanner.runOnFiles(file);
+				successful = scanner.runOnFiles(file, scannerResult);
 			}
 			catch(IOException e) {
 				e.printStackTrace();
 				successful = false;
+			}
+
+			if (!successful) {
+				NotificationFactory.notifyScanFailedOnFile(project, file);
+				scannerResult.addFailedFile(file);
 			}
 
 			if (cancelled) {
@@ -108,7 +116,7 @@ public class ScannerBackgroundTask extends Task.Modal {
 		super.onSuccess();
 
 		if (!cancelled) {
-			onSuccessCallback.accept(scanner);
+			onSuccessCallback.accept(scanner, scannerResult);
 		}
 	}
 }

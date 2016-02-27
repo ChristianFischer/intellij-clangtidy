@@ -26,6 +26,7 @@ import clangtidy.util.FixCompileCommandsNotFound;
 import clangtidy.util.NotificationFactory;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.jetbrains.cidr.cpp.cmake.workspace.CMakeWorkspace;
 import org.jetbrains.annotations.NotNull;
@@ -93,12 +94,64 @@ public class CLangModernizeHelper {
 	}
 
 
-	private void onScannerFinished(Scanner scanner) {
-		if (scanner.getFixes().isEmpty()) {
-			NotificationFactory.notifyResultNoFixesFound(project);
+	private void onScannerFinished(Scanner scanner, ScannerResult result) {
+		if (result.hasFailedFiles()) {
+			final String FilesFailedTitle = "Error Reading Files";
+
+			if (result.getFailedFiles().size() >= sourceFiles.getFilesToProcess().size()) {
+				Messages.showErrorDialog(
+						project,
+						"clang-tidy failed to execute on all input files.",
+						FilesFailedTitle
+				);
+			}
+			else {
+				StringBuilder sb = new StringBuilder();
+				sb.append("clang-tidy failed on ");
+				sb.append(result.getFailedFiles().size());
+				sb.append(" of ");
+				sb.append(sourceFiles.getFilesToProcess().size());
+				sb.append(" input files.\n");
+
+				if (result.hasFixes()) {
+					sb.append("Continue to apply ");
+					sb.append(result.getFixes().size());
+					sb.append(" fixes?");
+
+					int rc = Messages.showYesNoDialog(
+							project,
+							sb.toString(),
+							FilesFailedTitle,
+							Messages.getErrorIcon()
+					);
+
+					if (rc == Messages.YES) {
+						onStartFixingIssues(result);
+					}
+				}
+				else {
+					sb.append("No fixes were found");
+
+					Messages.showErrorDialog(
+							project,
+							sb.toString(),
+							FilesFailedTitle
+					);
+				}
+			}
 		}
 		else {
-			ApplyFixesBackgroundTask.start(project, scanner.getFixes());
+			if (result.hasFixes()) {
+				onStartFixingIssues(result);
+			}
+			else {
+				NotificationFactory.notifyResultNoFixesFound(project);
+			}
 		}
+	}
+
+
+	private void onStartFixingIssues(ScannerResult result) {
+		ApplyFixesBackgroundTask.start(project, result);
 	}
 }

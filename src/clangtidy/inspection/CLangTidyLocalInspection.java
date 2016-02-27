@@ -24,6 +24,7 @@ package clangtidy.inspection;
 import clangtidy.tidy.CompileCommandsNotFoundException;
 import clangtidy.tidy.Issue;
 import clangtidy.tidy.Scanner;
+import clangtidy.tidy.ScannerResult;
 import com.intellij.codeInspection.InspectionManager;
 import com.intellij.codeInspection.LocalInspectionTool;
 import com.intellij.codeInspection.ProblemDescriptor;
@@ -77,13 +78,13 @@ public class CLangTidyLocalInspection extends LocalInspectionTool {
 			VirtualFile vfile = file.getVirtualFile();
 
 			Scanner runner = new Scanner(file.getProject());
-			boolean success = runner.runOnFiles(vfile);
+			ScannerResult result = new ScannerResult();
+			boolean success = runner.runOnFiles(vfile, result);
 
-			List<Issue> issues = runner.getIssues();
 			List<ProblemDescriptor> problemsList = new ArrayList<>();
 
-			if (success && (issues != null)) {
-				for(Issue issue : issues) {
+			if (success && result.hasIssues()) {
+				for(Issue issue : result.getIssues()) {
 					VirtualFile issueFile = file.getVirtualFile().getFileSystem().findFileByPath(issue.getSourceFileName());
 
 					if (issueFile != null) {

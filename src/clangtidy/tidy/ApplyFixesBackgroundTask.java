@@ -28,7 +28,6 @@ import com.intellij.openapi.project.Project;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
-import java.util.List;
 
 /**
  * Background task to apply any fixes found by clang-tidy to the current project.
@@ -37,13 +36,13 @@ public class ApplyFixesBackgroundTask extends Task.Modal {
 	public final static String TITLE	= "clang-tidy: applying fixes";
 
 	private Project				project;
-	private List<Fix>			fixesToApply;
+	private ScannerResult		scannerResult;
 	private FixProjectHelper	helper;
 
 
 
-	public static void start(@NotNull Project project, @NotNull List<Fix> fixesToApply) {
-		ProgressManager.getInstance().run(new ApplyFixesBackgroundTask(project, fixesToApply));
+	public static void start(@NotNull Project project, @NotNull ScannerResult scannerResult) {
+		ProgressManager.getInstance().run(new ApplyFixesBackgroundTask(project, scannerResult));
 	}
 
 
@@ -52,10 +51,10 @@ public class ApplyFixesBackgroundTask extends Task.Modal {
 	}
 
 
-	public ApplyFixesBackgroundTask(@NotNull Project project, @NotNull List<Fix> fixesToApply) {
+	public ApplyFixesBackgroundTask(@NotNull Project project, @NotNull ScannerResult scannerResult) {
 		super(project, TITLE, false);
 		this.project		= project;
-		this.fixesToApply	= fixesToApply;
+		this.scannerResult	= scannerResult;
 	}
 
 
@@ -72,7 +71,7 @@ public class ApplyFixesBackgroundTask extends Task.Modal {
 		indicator.setText("preparing");
 
 		if (helper == null) {
-			helper = FixProjectHelper.create(project, fixesToApply);
+			helper = FixProjectHelper.create(project, scannerResult);
 		}
 
 		while(helper.hasFixesToApply()) {

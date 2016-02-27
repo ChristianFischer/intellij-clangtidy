@@ -24,6 +24,7 @@ package clangtidy.util;
 import com.intellij.notification.Notification;
 import com.intellij.notification.NotificationType;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.vfs.VirtualFile;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -56,6 +57,18 @@ public class NotificationFactory {
 				"No compilable files selected.",
 				"Please select at least one C, C++ or ObjectiveC source file to process.",
 				NotificationType.INFORMATION
+		);
+
+		notification.notify(project);
+	}
+
+
+	public static void notifyScanFailedOnFile(@NotNull Project project, @NotNull VirtualFile file) {
+		Notification notification = new Notification(
+				GroupId,
+				"clang-tidy failed on file",
+				file.getPath(),
+				NotificationType.ERROR
 		);
 
 		notification.notify(project);
