@@ -71,6 +71,7 @@ public class YamlReader {
 		tokenizer.ordinaryChar('.');
 		tokenizer.commentChar('#');
 		tokenizer.quoteChar('\'');
+		tokenizer.wordChars('_', '_');
 
 		try {
 			expect(KEY_INTRO);
@@ -117,6 +118,7 @@ public class YamlReader {
 				expect('.');
 				expect('.');
 				expect('.');
+				ignoreToken(StreamTokenizer.TT_EOL);
 				expect(StreamTokenizer.TT_EOF);
 				tokenizer.pushBack();
 				break;
@@ -186,7 +188,7 @@ public class YamlReader {
 							break;
 						}
 
-						case StateValue: {
+						case StateKey: {
 							currentState = StateValue;
 							currentValue = tokenizer.sval;
 							break;
@@ -246,9 +248,15 @@ public class YamlReader {
 					break parserLoop;
 				}
 
-				default: {
+				case '.':
+				case '-': {
 					tokenizer.pushBack();
 					break parserLoop;
+				}
+
+				default: {
+					unexpectedState();
+					break;
 				}
 			}
 		}
@@ -257,6 +265,14 @@ public class YamlReader {
 		return map;
 	}
 
+
+
+	protected void ignoreToken(int expectedToken) throws IOException {
+		int token = tokenizer.nextToken();
+		if (token != expectedToken) {
+			tokenizer.pushBack();
+		}
+	}
 
 
 	protected void expect(String expectedString) throws IOException {
