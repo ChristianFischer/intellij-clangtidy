@@ -21,8 +21,13 @@
  */
 package clangtidy;
 
+import com.intellij.openapi.fileChooser.FileChooser;
+import com.intellij.openapi.fileChooser.FileChooserDescriptor;
 import com.intellij.openapi.options.Configurable;
 import com.intellij.openapi.options.ConfigurationException;
+import com.intellij.openapi.util.SystemInfo;
+import com.intellij.openapi.vfs.LocalFileSystem;
+import com.intellij.openapi.vfs.VirtualFile;
 import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.Nullable;
 
@@ -96,11 +101,21 @@ public class OptionTab implements Configurable {
 
 
 	void onBtCLangTidySelectClicked(ActionEvent e) {
-		JFileChooser fc = new JFileChooser(txtCLangTidyPath.getText());
-		int ret = fc.showOpenDialog(OptionTab.this.contentPane);
+		FileChooserDescriptor fileChooserDescriptor = new FileChooserDescriptor(true, false, false, false, false, false);
 
-		if (ret == JFileChooser.APPROVE_OPTION) {
-			txtCLangTidyPath.setText(fc.getSelectedFile().getPath());
+		if (SystemInfo.isWindows) {
+			fileChooserDescriptor.withFileFilter((VirtualFile file) -> "exe".equalsIgnoreCase(file.getExtension()));
+		}
+
+		VirtualFile file = FileChooser.chooseFile(
+				fileChooserDescriptor,
+				OptionTab.this.contentPane,
+				null,
+				LocalFileSystem.getInstance().findFileByPath(txtCLangTidyPath.getText())
+		);
+
+		if (file != null) {
+			txtCLangTidyPath.setText(file.getPath());
 			setModified();
 		}
 	}
