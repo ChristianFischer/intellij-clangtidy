@@ -42,7 +42,9 @@ public class ScannerResult {
 
 
 	public void addFailedFile(VirtualFile file) {
-		filesFailed.add(file);
+		if (!filesFailed.contains(file)) {
+			filesFailed.add(file);
+		}
 	}
 
 	public boolean hasFailedFiles() {
@@ -55,7 +57,9 @@ public class ScannerResult {
 
 
 	public void addIssue(Issue issue) {
-		issues.add(issue);
+		if (!issues.contains(issue)) {
+			issues.add(issue);
+		}
 	}
 
 	public boolean hasIssues() {
@@ -68,7 +72,9 @@ public class ScannerResult {
 
 
 	public void addFix(Fix fix) {
-		fixes.add(fix);
+		if (!fixes.contains(fix)) {
+			fixes.add(fix);
+		}
 	}
 
 	public boolean hasFixes() {

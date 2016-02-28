@@ -25,13 +25,11 @@ import com.intellij.openapi.command.WriteCommandAction;
 import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.fileEditor.FileDocumentManager;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.roots.ProjectFileIndex;
 import com.intellij.openapi.util.TextRange;
-import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.openapi.vfs.VirtualFile;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
@@ -42,29 +40,39 @@ import java.util.*;
  */
 public class FixProjectHelper {
 	private static class PerFile {
+		enum Scope {
+			Selection,
+			Project,
+			External,
+		}
+
 		PerFile() {
-			fixes = new ArrayList<>();
+			issues = new ArrayList<>();
+			fixes  = new ArrayList<>();
 			offset = 0;
 		}
 
+		Scope			scope;
+		List<Issue>		issues;
 		List<Fix>		fixes;
 		int				offset;
 	}
 
 
 	private Project						project;
-	private Map<File,PerFile>			fixesPerFile;
-	private List<File>					failedFiles;
+	private Map<VirtualFile,PerFile>	fixesPerFile;
+	private List<VirtualFile>			failedFiles;
 	private List<Fix>					failedFixes;
 	private int							totalFilesToFix;
 
 
 
-	public static FixProjectHelper create(@NotNull Project project, @NotNull ScannerResult scannerResult) {
+	public static FixProjectHelper create(@NotNull Project project, @NotNull SourceFileSelection sourceFiles, @NotNull ScannerResult scannerResult) {
+		ProjectFileIndex projectFileIndex = ProjectFileIndex.SERVICE.getInstance(project);
 		FixProjectHelper helper = new FixProjectHelper(project);
 
 		for(Fix fix : scannerResult.getFixes()) {
-			File file = fix.getFile();
+			VirtualFile file = fix.getFile();
 			PerFile target;
 
 			if (helper.fixesPerFile.containsKey(file)) {
@@ -76,6 +84,31 @@ public class FixProjectHelper {
 			}
 
 			target.fixes.add(fix);
+		}
+
+		for(Issue issue : scannerResult.getIssues()) {
+			VirtualFile file = issue.getSourceFile();
+			PerFile target;
+
+			if (helper.fixesPerFile.containsKey(file)) {
+				target = helper.fixesPerFile.get(file);
+				target.issues.add(issue);
+			}
+		}
+
+		for(Map.Entry<VirtualFile,PerFile> entry : helper.fixesPerFile.entrySet()) {
+			VirtualFile file    = entry.getKey();
+			PerFile     perFile = entry.getValue();
+
+			if (sourceFiles.isInSelection(file)) {
+				perFile.scope = PerFile.Scope.Selection;
+			}
+			else if (projectFileIndex.isInSource(file)) {
+				perFile.scope = PerFile.Scope.Project;
+			}
+			else {
+				perFile.scope = PerFile.Scope.External;
+			}
 		}
 
 		helper.totalFilesToFix	= helper.fixesPerFile.size();
@@ -109,7 +142,7 @@ public class FixProjectHelper {
 	}
 
 
-	public File getNextFileToApply() {
+	public VirtualFile getNextFileToApply() {
 		if (!fixesPerFile.isEmpty()) {
 			return fixesPerFile.keySet().iterator().next();
 		}
@@ -133,7 +166,7 @@ public class FixProjectHelper {
 	}
 
 
-	public boolean applyForFile(@NotNull File nextFile) {
+	public boolean applyForFile(@NotNull VirtualFile nextFile) {
 		PerFile perFile = fixesPerFile.get(nextFile);
 		fixesPerFile.remove(nextFile);
 
@@ -148,20 +181,19 @@ public class FixProjectHelper {
 	}
 
 
-	private boolean apply(@NotNull File file, @NotNull PerFile fixesPerFile) {
-		VirtualFile vfile = LocalFileSystem.getInstance().findFileByIoFile(file);
-		if (vfile == null) {
+	private boolean apply(@NotNull VirtualFile file, @NotNull PerFile fixesPerFile) {
+		prepareFile(file, fixesPerFile);
+
+		if (fixesPerFile.scope == PerFile.Scope.External) {
 			return false;
 		}
-
-		prepareFile(file, fixesPerFile);
 
 		WriteCommandAction.runWriteCommandAction(
 				project,
 				"clang-tidy",
 				null,
 				() -> {
-					Document document = FileDocumentManager.getInstance().getDocument(vfile);
+					Document document = FileDocumentManager.getInstance().getDocument(file);
 					if (document == null) {
 						return;
 					}
@@ -184,7 +216,7 @@ public class FixProjectHelper {
 	}
 
 
-	private void prepareFile(File file, PerFile fixesPerFile) {
+	private void prepareFile(VirtualFile file, PerFile fixesPerFile) {
 		// ensure, all fixes are sorted in ascending order
 		Collections.sort(
 				fixesPerFile.fixes,
@@ -193,29 +225,30 @@ public class FixProjectHelper {
 
 		// since Intellij uses only \n for linebreaks, but clang-tidy is using the file's native
 		// linebreak style for it's offsets, we have to convert them into \n linebreak offsets
-		try(InputStream in = new FileInputStream(file)) {
+		try(InputStream in = file.getInputStream()) {
 			List<Integer> ignorableLineFeeds = new ArrayList<>();
+			List<Integer> lineOffsets        = new ArrayList<>();
 
 			{
 				int currentOffset = 0;
+				int lastByte      = -1;
 				int b;
+
+				lineOffsets.add(0);
 
 				while((b = in.read()) != -1) {
 					++currentOffset;
 
-					if (b == '\r') {
-						b = in.read();
-						++currentOffset;
-
-						if (b == -1) {
-							break;
-						}
+					if (b == '\n') {
+						lineOffsets.add(currentOffset);
 
 						// after a combination of \r and \n, the \r has to be ignored
-						if (b == '\n') {
+						if (lastByte == '\r') {
 							ignorableLineFeeds.add(currentOffset);
 						}
 					}
+
+					lastByte = b;
 				}
 			}
 
@@ -230,6 +263,18 @@ public class FixProjectHelper {
 						(int)(startOffset - startOffsetCorrection),
 						(int)(endOffset   - endOffsetCorrection)
 				));
+
+				// try to assign issues to each fix
+				for(Issue issue : fixesPerFile.issues) {
+					if (lineOffsets.size() >= issue.getLineNumber()) {
+						int lineOffset = lineOffsets.get(issue.getLineNumber() - 1);
+						int offset     = lineOffset + issue.getLineColumn() - 1;
+
+						if (fix.getTextRange().getStartOffset() == offset) {
+							fix.setIssue(issue);
+						}
+					}
+				}
 			}
 		}
 		catch(IOException e) {

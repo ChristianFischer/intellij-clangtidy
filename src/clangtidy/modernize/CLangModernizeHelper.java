@@ -152,6 +152,6 @@ public class CLangModernizeHelper {
 
 
 	private void onStartFixingIssues(ScannerResult result) {
-		ApplyFixesBackgroundTask.start(project, result);
+		ApplyFixesBackgroundTask.start(project, sourceFiles, result);
 	}
 }

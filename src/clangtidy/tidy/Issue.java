@@ -22,6 +22,9 @@
 package clangtidy.tidy;
 
 import com.intellij.codeInspection.ProblemHighlightType;
+import com.intellij.openapi.vfs.VirtualFile;
+
+import java.util.Objects;
 
 /**
  * Represents a single issue found by clang-tidy.
@@ -29,7 +32,7 @@ import com.intellij.codeInspection.ProblemHighlightType;
 public class Issue {
 	protected ProblemHighlightType type;
 
-	protected String sourceFileName;
+	protected VirtualFile sourceFile;
 	protected int lineNumber;
 	protected int lineColumn;
 
@@ -41,8 +44,8 @@ public class Issue {
 		return type;
 	}
 
-	public String getSourceFileName() {
-		return sourceFileName;
+	public VirtualFile getSourceFile() {
+		return sourceFile;
 	}
 
 	public int getLineNumber() {
@@ -62,10 +65,32 @@ public class Issue {
 	}
 
 
+	@Override
+	public boolean equals(Object obj) {
+		if (obj instanceof Issue) {
+			Issue other = (Issue)obj;
+
+			if (
+					Objects.equals(this.type,       other.type)
+				&&	Objects.equals(this.sourceFile, other.sourceFile)
+				&&	Objects.equals(this.group,      other.group)
+				&&	Objects.equals(this.message,    other.message)
+				&&	this.lineNumber	== other.lineNumber
+				&&	this.lineColumn == other.lineColumn
+			) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+
+	@Override
 	public String toString() {
 		return
 				type.toString() + ':'
-			+	getSourceFileName() + ':' + getLineNumber() + ':' + getLineColumn()
+			+	getSourceFile().getPath() + ':' + getLineNumber() + ':' + getLineColumn()
 			+	getMessage()
 		;
 	}

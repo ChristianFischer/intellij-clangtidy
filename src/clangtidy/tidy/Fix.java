@@ -22,26 +22,41 @@
 package clangtidy.tidy;
 
 import com.intellij.openapi.util.TextRange;
+import com.intellij.openapi.vfs.VirtualFile;
 
-import java.io.File;
+import java.util.Objects;
 
 /**
  * Stores a single change result provided by clang-tidy.
  */
 public class Fix {
-	private File		file;
+	private Issue		issue;
+	private VirtualFile file;
 	private TextRange	range;
 	private String		replacement;
 
 
-	public Fix(File file, TextRange range, String replacement) {
+	public Fix(VirtualFile file, TextRange range, String replacement) {
 		this.file			= file;
 		this.range			= range;
 		this.replacement	= replacement;
 	}
 
 
-	public File getFile() {
+	public void setIssue(Issue issue) {
+		if (!Objects.equals(issue.getSourceFile(), this.file)) {
+			throw new IllegalArgumentException("File names do not match");
+		}
+		else {
+			this.issue = issue;
+		}
+	}
+
+	public Issue getIssue() {
+		return issue;
+	}
+
+	public VirtualFile getFile() {
 		return file;
 	}
 
@@ -55,5 +70,32 @@ public class Fix {
 
 	public String getReplacement() {
 		return replacement;
+	}
+
+
+	@Override
+	public boolean equals(Object obj) {
+		if (obj instanceof Fix) {
+			Fix other = (Fix)obj;
+
+			if (
+					Objects.equals(this.file,        other.file)
+				&&	Objects.equals(this.issue,       other.issue)
+				&&	Objects.equals(this.range,       other.range)
+				&&	Objects.equals(this.replacement, other.replacement)
+			) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	@Override
+	public String toString() {
+		return
+				getFile().getPath() + '@' + getTextRange()
+			+	" => '" + getReplacement() + "'"
+		;
 	}
 }

@@ -85,7 +85,7 @@ public class CLangTidyLocalInspection extends LocalInspectionTool {
 
 			if (success && result.hasIssues()) {
 				for(Issue issue : result.getIssues()) {
-					VirtualFile issueFile = file.getVirtualFile().getFileSystem().findFileByPath(issue.getSourceFileName());
+					VirtualFile issueFile = file.getVirtualFile().getFileSystem().findFileByPath(issue.getSourceFile().getPath());
 
 					if (issueFile != null) {
 						Document document = FileDocumentManager.getInstance().getDocument(issueFile);

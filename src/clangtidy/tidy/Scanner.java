@@ -26,6 +26,7 @@ import clangtidy.yaml.YamlReader;
 import com.intellij.codeInspection.ProblemHighlightType;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.TextRange;
+import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.jetbrains.cidr.cpp.cmake.workspace.CMakeWorkspace;
 import org.jetbrains.annotations.NotNull;
@@ -144,6 +145,7 @@ public class Scanner {
 		args.add(Options.getCLangTidyExe());
 		args.add("-p");
 		args.add("\"" + compileCommandsFile.getParentFile().getAbsolutePath() + "\"");
+		args.add("-header-filter=\".*\"");
 		args.add("-checks=*");
 
 		switch(fixIssues) {
@@ -204,7 +206,8 @@ public class Scanner {
 							issue.type = ProblemHighlightType.GENERIC_ERROR_OR_WARNING;
 						}
 
-						issue.sourceFileName	= m.group(1);
+						String path				= m.group(1);
+						issue.sourceFile		= LocalFileSystem.getInstance().findFileByPath(path);
 						issue.lineNumber		= Integer.parseInt(m.group(2));
 						issue.lineColumn		= Integer.parseInt(m.group(3));
 						issue.message			= m.group(5);
@@ -313,7 +316,7 @@ public class Scanner {
 			int iLength = ((Number)length).intValue();
 
 			return new Fix(
-					new File(fileName.toString()),
+					LocalFileSystem.getInstance().findFileByPath(fileName.toString()),
 					TextRange.create(iOffset, iOffset + iLength),
 					replacement.toString()
 			);

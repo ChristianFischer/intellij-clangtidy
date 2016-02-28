@@ -25,9 +25,8 @@ import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.vfs.VirtualFile;
 import org.jetbrains.annotations.NotNull;
-
-import java.io.File;
 
 /**
  * Background task to apply any fixes found by clang-tidy to the current project.
@@ -36,13 +35,14 @@ public class ApplyFixesBackgroundTask extends Task.Modal {
 	public final static String TITLE	= "clang-tidy: applying fixes";
 
 	private Project				project;
+	private SourceFileSelection	sourceFileSelection;
 	private ScannerResult		scannerResult;
 	private FixProjectHelper	helper;
 
 
 
-	public static void start(@NotNull Project project, @NotNull ScannerResult scannerResult) {
-		ProgressManager.getInstance().run(new ApplyFixesBackgroundTask(project, scannerResult));
+	public static void start(@NotNull Project project, @NotNull SourceFileSelection selection, @NotNull ScannerResult scannerResult) {
+		ProgressManager.getInstance().run(new ApplyFixesBackgroundTask(project, selection, scannerResult));
 	}
 
 
@@ -51,10 +51,11 @@ public class ApplyFixesBackgroundTask extends Task.Modal {
 	}
 
 
-	public ApplyFixesBackgroundTask(@NotNull Project project, @NotNull ScannerResult scannerResult) {
+	public ApplyFixesBackgroundTask(@NotNull Project project, @NotNull SourceFileSelection selection, @NotNull ScannerResult scannerResult) {
 		super(project, TITLE, false);
-		this.project		= project;
-		this.scannerResult	= scannerResult;
+		this.project				= project;
+		this.sourceFileSelection	= selection;
+		this.scannerResult			= scannerResult;
 	}
 
 
@@ -71,11 +72,11 @@ public class ApplyFixesBackgroundTask extends Task.Modal {
 		indicator.setText("preparing");
 
 		if (helper == null) {
-			helper = FixProjectHelper.create(project, scannerResult);
+			helper = FixProjectHelper.create(project, sourceFileSelection, scannerResult);
 		}
 
 		while(helper.hasFixesToApply()) {
-			File nextFile = helper.getNextFileToApply();
+			VirtualFile nextFile = helper.getNextFileToApply();
 			indicator.setText(nextFile.getPath());
 
 			helper.applyForFile(nextFile);
