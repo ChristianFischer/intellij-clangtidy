@@ -24,6 +24,7 @@ package clangtidy.util;
 import com.intellij.notification.Notification;
 import com.intellij.notification.NotificationType;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.vfs.VirtualFile;
 import org.jetbrains.annotations.NotNull;
 
@@ -84,5 +85,14 @@ public class NotificationFactory {
 		);
 
 		notification.notify(project);
+	}
+
+
+	public static void notifyFailedToApplyFixesOnFile(@NotNull Project project, @NotNull VirtualFile file) {
+		Messages.showErrorDialog(
+				project,
+				"Failed to apply fixes on file '" + file.getPath() + "'",
+				"Failed to apply fixes on file"
+		);
 	}
 }

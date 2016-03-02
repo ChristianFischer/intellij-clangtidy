@@ -25,8 +25,9 @@ import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.vfs.VirtualFile;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.List;
 
 /**
  * Background task to apply any fixes found by clang-tidy to the current project.
@@ -75,14 +76,15 @@ public class ApplyFixesBackgroundTask extends Task.Modal {
 			helper = FixProjectHelper.create(project, sourceFileSelection, scannerResult);
 		}
 
-		while(helper.hasFixesToApply()) {
-			VirtualFile nextFile = helper.getNextFileToApply();
-			indicator.setText(nextFile.getPath());
+		final List<FixFileEntry> entries = helper.getFixes();
+		int filesTotal   = entries.size();
+		int filesApplied = 0;
 
-			helper.applyForFile(nextFile);
+		for(FixFileEntry entry : entries) {
+			indicator.setText(entry.getFile().getPath());
+			helper.applyIfSelected(entry);
+			++filesApplied;
 
-			int filesTotal   = helper.getTotalFilesToFix();
-			int filesApplied = helper.getTotalFilesToFix() - helper.getRemainingFilesToFix();
 			indicator.setFraction(1.0 * filesApplied / filesTotal);
 		}
 

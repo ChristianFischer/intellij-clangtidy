@@ -126,7 +126,7 @@ public class CLangModernizeHelper {
 					);
 
 					if (rc == Messages.YES) {
-						onStartFixingIssues(result);
+						onPreviewFixes(result);
 					}
 				}
 				else {
@@ -142,7 +142,7 @@ public class CLangModernizeHelper {
 		}
 		else {
 			if (result.hasFixes()) {
-				onStartFixingIssues(result);
+				onPreviewFixes(result);
 			}
 			else {
 				NotificationFactory.notifyResultNoFixesFound(project);
@@ -151,7 +151,22 @@ public class CLangModernizeHelper {
 	}
 
 
+	private void onPreviewFixes(ScannerResult result) {
+		final FixProjectHelper helper = FixProjectHelper.create(project, sourceFiles, result);
+
+		ApplyResultsDialog dialog = new ApplyResultsDialog(project, helper);
+		dialog.show();
+	}
+
+
 	private void onStartFixingIssues(ScannerResult result) {
 		ApplyFixesBackgroundTask.start(project, sourceFiles, result);
 	}
+
+
+	private void onStartFixingIssues(@NotNull FixProjectHelper helper) {
+		ApplyFixesBackgroundTask.start(helper);
+	}
+
+
 }
