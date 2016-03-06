@@ -65,10 +65,12 @@ public class Scanner {
 	protected File					compileCommandsFile;
 	protected File					fixesTargetFile;
 	protected FixIssues				fixIssues = FixIssues.DontFix;
+	protected List<ToolController>	tools;
 	private boolean					ready = false;
 
 
 	protected Scanner() {
+		tools		= new ArrayList<>();
 	}
 
 
@@ -120,11 +122,60 @@ public class Scanner {
 	}
 
 
+	public void addTool(@NotNull ToolController tool) {
+		tools.add(tool);
+	}
 
-	public void clearResults() {
-		if (fixesTargetFile.exists()) {
-			fixesTargetFile.delete();
+
+
+	private void addToolsConfig(@NotNull List<String> args) {
+		StringBuilder checksString = null;
+		StringBuilder configString = null;
+
+		for(ToolController tool : tools) {
+			Map<String,String> params = tool.getConfigParameters();
+
+			if (checksString == null) {
+				checksString = new StringBuilder();
+			}
+			else {
+				checksString.append(',');
+			}
+
+			checksString.append(tool.getName());
+
+			if (params != null) {
+				for(Map.Entry<String,String> entry : params.entrySet()) {
+					if (configString == null) {
+						configString = new StringBuilder();
+					}
+					else {
+						configString.append(',').append(' ');
+					}
+
+					configString.append('{');
+					configString.append("key: ");
+					configString.append('\'').append(tool.getName()).append('.').append(entry.getKey()).append('\'');
+					configString.append(',').append(' ');
+					configString.append("value: ");
+					configString.append('\'').append(entry.getValue()).append('\'');
+					configString.append('}');
+				}
+			}
 		}
+
+		if (checksString != null) {
+			args.add("-checks=-*," + checksString.toString());
+		}
+		else {
+			args.add("-checks=*");
+		}
+
+		if (configString != null) {
+			args.add("-config={CheckOptions: [ " + configString.toString() + " ]}");
+		}
+
+	//	args.add("-dump-config");
 	}
 
 
@@ -146,7 +197,8 @@ public class Scanner {
 		args.add("-p");
 		args.add("\"" + compileCommandsFile.getParentFile().getAbsolutePath() + "\"");
 		args.add("-header-filter=\".*\"");
-		args.add("-checks=*");
+
+		addToolsConfig(args);
 
 		switch(fixIssues) {
 			case DontFix: {

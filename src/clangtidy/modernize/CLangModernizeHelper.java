@@ -57,6 +57,23 @@ public class CLangModernizeHelper {
 			return false;
 		}
 
+		ModernizerConfigurationDialog dialog = new ModernizerConfigurationDialog(project);
+		boolean success = dialog.showAndGet();
+
+		if (success) {
+			success = startScanner(files, dialog.getSelectedTools());
+		}
+
+		return success;
+	}
+
+
+	public boolean startScanner(VirtualFile[] files, ToolController[] selectedTools) {
+		if (files == null || files.length == 0) {
+			NotificationFactory.notifyNoFilesSelected(project);
+			return false;
+		}
+
 		sourceFiles = new SourceFileSelection(cMakeWorkspace);
 		for(VirtualFile file : files) {
 			sourceFiles.addFile(file);
@@ -71,6 +88,10 @@ public class CLangModernizeHelper {
 		try {
 			scanner = new Scanner(project);
 			scanner.setFixIssues(Scanner.FixIssues.StoreFixes);
+
+			for(ToolController tool : selectedTools) {
+				scanner.addTool(tool);
+			}
 		}
 		catch(CompileCommandsNotFoundException e) {
 			FixCompileCommandsNotFound.fix(project, e);
