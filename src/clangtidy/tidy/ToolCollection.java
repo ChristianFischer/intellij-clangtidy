@@ -21,19 +21,89 @@
  */
 package clangtidy.tidy;
 
-import clangtidy.tidy.tools.ModernizeLoopConvert;
+import clangtidy.Options;
 import clangtidy.tidy.tools.SimpleTool;
+import com.intellij.openapi.extensions.ExtensionPointName;
+import com.intellij.openapi.extensions.Extensions;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Consumer;
 
 /**
  * Helper class to retrieve a list of checks available in clang-tidy.
  */
 public class ToolCollection {
+	private static Set<String>		cachedToolNames;
+	private static List<String>		blacklistedToolNames;
+
+	static {
+		blacklistedToolNames = new ArrayList<>();
+		blacklistedToolNames.add("cert-");
+		blacklistedToolNames.add("clang-analyzer-alpha");
+		blacklistedToolNames.add("clang-analyzer-");
+		blacklistedToolNames.add("cppcoreguidelines-");
+		blacklistedToolNames.add("google-");
+		blacklistedToolNames.add("llvm-");
+		blacklistedToolNames.add("misc-");
+	}
+
+
 	private ToolCollection() {
+	}
+
+
+
+	private static boolean fetchToolsList() {
+		if (cachedToolNames == null) {
+			cachedToolNames = new HashSet<>();
+
+			ProcessWrapper process = new ProcessWrapper(
+					Options.getCLangTidyExe(),
+					"-checks=*",
+					"-list-checks"
+			);
+
+			process.setOutputConsumer(line -> {
+				if (line.startsWith("    ")) {
+					String item = line.trim();
+
+					for (String blacklistedItem : blacklistedToolNames) {
+						if (item.startsWith(blacklistedItem)) {
+							return;
+						}
+					}
+
+					cachedToolNames.add(item);
+				}
+			});
+
+			try {
+				return process.run();
+			}
+			catch (IOException e) {
+				e.printStackTrace();
+			}
+
+			return false;
+		}
+
+		return true;
+	}
+
+
+	private static ToolController createToolForName(@NotNull ToolController[] knownControllers, @NotNull String toolName) {
+		for(ToolController tc : knownControllers) {
+			if (tc.getName().equals(toolName)) {
+				return tc;
+			}
+		}
+
+		return new SimpleTool(toolName);
 	}
 
 
@@ -44,28 +114,31 @@ public class ToolCollection {
 	 */
 	public static void requestAvailableTools(@NotNull Consumer<List<ToolController>> consumer) {
 		new Thread(() -> {
-			// todo: should perform clang-tidy -list-checks
+			ExtensionPointName<ToolController> tcExtensionPoint = new ExtensionPointName<>("com.your.company.unique.plugin.id.ToolController");
+			ToolController[] extensions = Extensions.getExtensions(tcExtensionPoint);
 
-			List<ToolController> transforms = new ArrayList<>();
-			transforms.add(new SimpleTool("modernize-make-unique"));
-			transforms.add(new SimpleTool("modernize-pass-by-value"));
-			transforms.add(new SimpleTool("modernize-redundant-void-arg"));
-			transforms.add(new SimpleTool("modernize-replace-auto-ptr"));
-			transforms.add(new SimpleTool("modernize-shrink-to-fit"));
-			transforms.add(new SimpleTool("modernize-use-auto"));
-			transforms.add(new SimpleTool("modernize-use-default"));
-			transforms.add(new SimpleTool("modernize-use-nullptr"));
-			transforms.add(new SimpleTool("modernize-use-override"));
-			transforms.add(new ModernizeLoopConvert());
+			List<ToolController> tools = new ArrayList<>();
 
-			try {
-				Thread.sleep(500);
-			}
-			catch (InterruptedException e) {
-				e.printStackTrace();
+			if (cachedToolNames == null) {
+				fetchToolsList();
 			}
 
-			consumer.accept(transforms);
+			assert cachedToolNames != null;
+
+			for(String toolName : cachedToolNames) {
+				ToolController tool = createToolForName(extensions, toolName);
+				tools.add(tool);
+			}
+
+			consumer.accept(tools);
 		}).start();
+	}
+
+
+	/**
+	 * Clear cached data, when clang-tidy was changed.
+	 */
+	public static void clearCachedData() {
+		cachedToolNames = null;
 	}
 }

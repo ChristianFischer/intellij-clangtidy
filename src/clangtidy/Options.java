@@ -21,13 +21,17 @@
  */
 package clangtidy;
 
+import clangtidy.tidy.ToolCollection;
 import clangtidy.tidy.ToolController;
 import com.intellij.ide.util.PropertiesComponent;
+import com.intellij.openapi.vfs.LocalFileSystem;
+import com.intellij.openapi.vfs.VirtualFile;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Objects;
 
 /**
  * A helper class to access the plugin's settings.
@@ -38,6 +42,14 @@ public class Options {
 	private final static PropertiesComponent properties = PropertiesComponent.getInstance();
 
 
+	public static void setCLangTidyExe(@NotNull String exe) {
+		if (!Objects.equals(exe, getCLangTidyExe())) {
+			properties.setValue(OPTION_KEY_CLANGTIDY_EXE, exe);
+			ToolCollection.clearCachedData();
+		}
+	}
+
+
 	public static String getCLangTidyExe() {
 		// todo: default path on unix - add proper path for windows
 		String defaultValue = "/usr/bin/clang-tidy";
@@ -46,8 +58,19 @@ public class Options {
 	}
 
 
-	public static void setCLangTidyExe(String exe) {
-		properties.setValue(OPTION_KEY_CLANGTIDY_EXE, exe);
+	/**
+	 * Checks if the path to the clang-tidy executable is configured and the file exists.
+	 */
+	public static boolean isCLangTidyReady() {
+		if (!getCLangTidyExe().isEmpty()) {
+			VirtualFile file = LocalFileSystem.getInstance().findFileByPath(getCLangTidyExe());
+
+			if (file != null) {
+				return file.exists();
+			}
+		}
+
+		return false;
 	}
 
 

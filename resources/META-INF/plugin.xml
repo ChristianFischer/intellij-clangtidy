@@ -19,6 +19,13 @@
 
   <depends>com.intellij.modules.clion</depends>
 
+  <extensionPoints>
+    <extensionPoint
+            name="ToolController"
+            interface="clangtidy.tidy.ToolController"
+    />
+  </extensionPoints>
+
   <extensions defaultExtensionNs="com.intellij">
     <localInspection
             implementationClass="clangtidy.inspection.CLangTidyLocalInspection"
@@ -32,6 +39,10 @@
     <applicationConfigurable
             instance="clangtidy.OptionTab"
     />
+  </extensions>
+
+  <extensions defaultExtensionNs="com.your.company.unique.plugin.id">
+    <ToolController implementation="clangtidy.tidy.tools.ModernizeLoopConvert" />
   </extensions>
 
   <actions>

@@ -21,6 +21,7 @@
  */
 package clangtidy.util;
 
+import clangtidy.Options;
 import com.intellij.notification.Notification;
 import com.intellij.notification.NotificationType;
 import com.intellij.openapi.project.Project;
@@ -36,6 +37,32 @@ public class NotificationFactory {
 
 
 	private NotificationFactory() {}
+
+
+	public static void notifyCLangTidyNotConfigured(@NotNull Project project) {
+		if (Options.getCLangTidyExe().isEmpty()) {
+			Notification notification = new Notification(
+					GroupId,
+					"Missing clang-tidy executable not found",
+					"Please enter a valid path to clang-tidy in Settings / Tools / clang-tidy",
+					NotificationType.ERROR
+			);
+
+			notification.notify(project);
+		}
+		else {
+			Notification notification = new Notification(
+					GroupId,
+					"Invalid path to clang-tidy",
+					"The given path for clang-tidy is incorrect:<br/>"
+					+ "<code>" + Options.getCLangTidyExe() + "</code><br/>"
+					+ "Please enter a valid path to clang-tidy in Settings / Tools / clang-tidy",
+					NotificationType.ERROR
+			);
+
+			notification.notify(project);
+		}
+	}
 
 
 	public static void notifyCompileCommandsNotFound(@NotNull Project project) {

@@ -21,6 +21,7 @@
  */
 package clangtidy.modernize;
 
+import clangtidy.Options;
 import clangtidy.tidy.*;
 import clangtidy.util.FixCompileCommandsNotFound;
 import clangtidy.util.NotificationFactory;
@@ -52,6 +53,11 @@ public class CLangModernizeHelper {
 
 
 	public boolean start(VirtualFile[] files) {
+		if (!Options.isCLangTidyReady()) {
+			NotificationFactory.notifyCLangTidyNotConfigured(project);
+			return false;
+		}
+
 		if (files == null || files.length == 0) {
 			NotificationFactory.notifyNoFilesSelected(project);
 			return false;

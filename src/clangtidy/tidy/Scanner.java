@@ -31,11 +31,12 @@ import com.intellij.openapi.vfs.VirtualFile;
 import com.jetbrains.cidr.cpp.cmake.workspace.CMakeWorkspace;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -128,7 +129,7 @@ public class Scanner {
 
 
 
-	private void addToolsConfig(@NotNull List<String> args) {
+	private void addToolsConfig(@NotNull ProcessWrapper process) {
 		StringBuilder checksString = null;
 		StringBuilder configString = null;
 
@@ -165,17 +166,17 @@ public class Scanner {
 		}
 
 		if (checksString != null) {
-			args.add("-checks=-*," + checksString.toString());
+			process.addArgument("-checks=-*," + checksString.toString());
 		}
 		else {
-			args.add("-checks=*");
+			process.addArgument("-checks=*");
 		}
 
 		if (configString != null) {
-			args.add("-config={CheckOptions: [ " + configString.toString() + " ]}");
+			process.addArgument("-config={CheckOptions: [ " + configString.toString() + " ]}");
 		}
 
-	//	args.add("-dump-config");
+	//	process.addArgument("-dump-config");
 	}
 
 
@@ -192,13 +193,12 @@ public class Scanner {
 			throw new IOException("File is a directory.");
 		}
 
-		List<String> args = new ArrayList<>();
-		args.add(Options.getCLangTidyExe());
-		args.add("-p");
-		args.add("\"" + compileCommandsFile.getParentFile().getAbsolutePath() + "\"");
-		args.add("-header-filter=\".*\"");
+		ProcessWrapper process = new ProcessWrapper(Options.getCLangTidyExe());
+		process.addArgument("-p");
+		process.addArgument("\"" + compileCommandsFile.getParentFile().getAbsolutePath() + "\"");
+		process.addArgument("-header-filter=\".*\"");
 
-		addToolsConfig(args);
+		addToolsConfig(process);
 
 		switch(fixIssues) {
 			case DontFix: {
@@ -206,13 +206,13 @@ public class Scanner {
 			}
 
 			case FixImmediately: {
-				args.add("-fix");
+				process.addArgument("-fix");
 				break;
 			}
 
 			case StoreFixes: {
 				if (fixesTargetFile != null) {
-					args.add("-export-fixes=\"" + fixesTargetFile.getPath().replace('\\', '/') + "\"");
+					process.addArgument("-export-fixes=\"" + fixesTargetFile.getPath().replace('\\', '/') + "\"");
 				}
 
 				break;
@@ -220,29 +220,11 @@ public class Scanner {
 		}
 
 		// add all source files
-		args.add("\"" + file.getPath() + "\"");
-
-		System.out.println("Run command: " + String.join(" ", args));
-
-		ProcessBuilder pb = new ProcessBuilder(args);
-		Process process = null;
-
+		process.addArgument("\"" + file.getPath() + "\"");
 		final boolean[] readingFileFailed = new boolean[]{ false };
 		boolean success = false;
 
-		try {
-			process = pb.start();
-		}
-		catch(IOException e) {
-			e.printStackTrace();
-		}
-
-		if (process == null) {
-			return false;
-		}
-
-		Thread outputHandler = OutputReader.fetch(
-				process.getInputStream(),
+		process.setOutputConsumer(
 				(String line) -> {
 					System.out.println("Tidy: " + line);
 
@@ -278,33 +260,14 @@ public class Scanner {
 				}
 		);
 
-		Thread errorHandler = OutputReader.fetch(
-				process.getErrorStream(),
+		process.setErrorConsumer(
 				(String line) -> System.err.println("CLangTidy: " + line)
 		);
 
 		try {
-			int returnCode = process.waitFor();
-
-			if (returnCode == 0) {
-				success = true;
-			}
+			success = process.run();
 		}
-		catch(InterruptedException e) {
-			e.printStackTrace();
-		}
-
-		try {
-			errorHandler.join();
-		}
-		catch(InterruptedException e) {
-			e.printStackTrace();
-		}
-
-		try {
-			outputHandler.join();
-		}
-		catch(InterruptedException e) {
+		catch(IOException e) {
 			e.printStackTrace();
 		}
 
@@ -325,16 +288,19 @@ public class Scanner {
 		try {
 			Object yaml = new YamlReader(yamlFile).getRootObject();
 			if (yaml != null && yaml instanceof Map) {
+				@SuppressWarnings("unchecked")
 				Map<String,Object> map = (Map<String,Object>)yaml;
 
 				if (map.containsKey("Replacements")) {
 					Object replacements = map.get("Replacements");
 
 					if (replacements != null && replacements instanceof List) {
+						@SuppressWarnings("unchecked")
 						List<Object> list = (List<Object>)replacements;
 
 						for(Object o : list) {
 							if (o instanceof Map) {
+								@SuppressWarnings("unchecked")
 								Fix fix = parseFix((Map<String,Object>)o);
 
 								if (fix != null) {
@@ -375,37 +341,5 @@ public class Scanner {
 		}
 
 		return null;
-	}
-
-
-	private static class OutputReader implements Runnable {
-		private InputStream in;
-		private Consumer<String> handler;
-
-		static @NotNull Thread fetch(@NotNull InputStream in, @NotNull Consumer<String> handler) {
-			Thread thread = new Thread(new OutputReader(in, handler));
-			thread.start();
-			return thread;
-		}
-
-		public OutputReader(@NotNull InputStream in, @NotNull Consumer<String> handler) {
-			this.in = in;
-			this.handler = handler;
-		}
-
-		@Override
-		public void run() {
-			try {
-				BufferedReader reader = new BufferedReader(new InputStreamReader(in));
-				String line;
-
-				while((line = reader.readLine()) != null) {
-					handler.accept(line);
-				}
-			}
-			catch(IOException e) {
-				e.printStackTrace();
-			}
-		}
 	}
 }
