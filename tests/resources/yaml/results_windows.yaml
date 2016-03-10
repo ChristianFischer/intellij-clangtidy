@@ -1,0 +1,16 @@
+---
+MainSourceFile:  ''
+Replacements:
+  - FilePath:        'D:/Path/to/my/SourceFile.cpp'
+    Offset:          284
+    Length:          19
+    ReplacementText: '(int i : arr)'
+  - FilePath:        'D:\\Path\\to\\my\\SourceFile.cpp'
+    Offset:          328
+    Length:          6
+    ReplacementText: i
+  - FilePath:        'D:/123/0.h'
+    Offset:          456
+    Length:          4
+    ReplacementText: nullptr
+...

@@ -30,7 +30,11 @@ import java.io.StreamTokenizer;
  */
 public class YamlSyntaxException extends IOException {
 	private static String generateMessage(File file, StreamTokenizer tokenizer) {
-		String message = "Unknown symbol at " + file.getPath() + ':' + tokenizer.lineno() + ": ";
+		String message =
+				file != null
+			?	"Unknown symbol at " + file.getPath() + ':' + tokenizer.lineno() + ": "
+			:	"Unknown symbol at line " + tokenizer.lineno() + ": "
+		;
 
 		switch(tokenizer.ttype) {
 			case StreamTokenizer.TT_WORD: {
@@ -45,7 +49,8 @@ public class YamlSyntaxException extends IOException {
 
 			default: {
 				if (tokenizer.ttype > 0) {
-					message += (char) tokenizer.ttype;
+					message += "'" + ((char)tokenizer.ttype) + "'";
+					message += " (" + tokenizer.ttype + ")";
 				}
 				else {
 					message += tokenizer.ttype;

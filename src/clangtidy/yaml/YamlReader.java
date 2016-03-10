@@ -50,6 +50,10 @@ public class YamlReader {
 		rootObject = read(file);
 	}
 
+	public YamlReader(InputStream in) throws IOException {
+		rootObject = read(in);
+	}
+
 
 	public Object getRootObject() {
 		return rootObject;
@@ -57,21 +61,37 @@ public class YamlReader {
 
 
 	private Object read(File file) throws IOException {
-		Object data = null;
-
 		this.file = file;
 
 		InputStream in = new FileInputStream(file);
+		return read(in);
+	}
+
+
+	private Object read(InputStream in) throws IOException {
+		Object data = null;
+
 		InputStreamReader reader = new InputStreamReader(in);
 
 		tokenizer = new StreamTokenizer(reader);
+		tokenizer.resetSyntax();
 		tokenizer.eolIsSignificant(true);
-		tokenizer.slashSlashComments(true);
-		tokenizer.slashStarComments(true);
-		tokenizer.ordinaryChar('.');
+		tokenizer.slashSlashComments(false);
+		tokenizer.slashStarComments(false);
+		tokenizer.parseNumbers();
+		tokenizer.ordinaryChar('.'); // dot required for outro mark
+		tokenizer.whitespaceChars('\0', ' ');
 		tokenizer.commentChar('#');
 		tokenizer.quoteChar('\'');
+		tokenizer.quoteChar('"');
+		tokenizer.wordChars('a', 'z');
+		tokenizer.wordChars('A', 'Z');
+		tokenizer.wordChars('0', '9');
 		tokenizer.wordChars('_', '_');
+		tokenizer.wordChars('-', '-');
+		tokenizer.wordChars('/', '/');
+		tokenizer.wordChars('.', '.');
+		tokenizer.wordChars(128 + 32, 255);
 
 		try {
 			expect(KEY_INTRO);
