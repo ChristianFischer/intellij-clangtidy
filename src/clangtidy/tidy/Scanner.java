@@ -195,8 +195,8 @@ public class Scanner {
 
 		ProcessWrapper process = new ProcessWrapper(Options.getCLangTidyExe());
 		process.addArgument("-p");
-		process.addArgument("\"" + compileCommandsFile.getParentFile().getAbsolutePath() + "\"");
-		process.addArgument("-header-filter=\".*\"");
+		process.addArgument(compileCommandsFile.getParentFile().getAbsolutePath());
+		process.addArgument("-header-filter=.*");
 
 		addToolsConfig(process);
 
@@ -212,7 +212,7 @@ public class Scanner {
 
 			case StoreFixes: {
 				if (fixesTargetFile != null) {
-					process.addArgument("-export-fixes=\"" + fixesTargetFile.getPath().replace('\\', '/') + "\"");
+					process.addArgument("-export-fixes=" + fixesTargetFile.getPath().replace('\\', '/'));
 				}
 
 				break;
@@ -220,7 +220,7 @@ public class Scanner {
 		}
 
 		// add all source files
-		process.addArgument("\"" + file.getPath() + "\"");
+		process.addArgument(file.getPath());
 		final boolean[] readingFileFailed = new boolean[]{ false };
 		boolean success = false;
 
