@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (C) 2016
  * Christian Fischer
  *
@@ -19,40 +19,14 @@
  * Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA 02110-1301 USA
  */
+
 package clangtidy.tidy.tools;
 
-import clangtidy.tidy.ToolController;
-import clangtidy.util.properties.PropertyInstance;
-import org.jetbrains.annotations.NotNull;
-
 /**
- * An implementation of {@link ToolController} for
- * simple tools which doesn't provide any configuration.
+ * Enumerations of risk levels for some modernization checks.
  */
-public class SimpleTool implements ToolController {
-	private String name;
-
-	public SimpleTool(@NotNull String name) {
-		this.name = name;
-	}
-
-	@NotNull
-	@Override
-	public String getName() {
-		return name;
-	}
-
-	@NotNull
-	@Override
-	public PropertyInstance[] getProperties() {
-		return new PropertyInstance[0];
-	}
-
-	@Override
-	public void onRestoreDefaults() {
-	}
-
-	@Override
-	public void OnConfigAccepted() {
-	}
+public enum RiskLevel {
+	safe,
+	reasonable,
+	risky,
 }

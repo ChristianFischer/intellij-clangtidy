@@ -24,10 +24,14 @@ package clangtidy.modernize;
 import clangtidy.Options;
 import clangtidy.tidy.ToolCollection;
 import clangtidy.tidy.ToolController;
+import clangtidy.util.properties.PropertyInstance;
+import clangtidy.util.properties.ui.PropertiesTable;
+import clangtidy.util.properties.ui.PropertiesTableModel;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.DialogWrapper;
 import com.intellij.openapi.ui.ValidationInfo;
 import com.intellij.ui.CheckBoxList;
+import com.intellij.ui.table.JBTable;
 import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
@@ -43,12 +47,14 @@ import java.util.List;
 public class ModernizerConfigurationDialog extends DialogWrapper {
 	private JPanel root;
 	private CheckBoxList<ToolController> listTools;
+	private JBTable tToolProperties;
 	private JPanel toolsConfigContainer;
+	private JTextPane txtCurrentDescription;
 
-	private ToolController currentTool;
-	private JComponent			currentToolComponent;
+	private ToolController							currentTool;
+	private PropertiesTableModel<ToolController>	currentToolProperties;
 
-	private Project				project;
+	private Project									project;
 
 
 	public ModernizerConfigurationDialog(@Nullable Project project) {
@@ -65,6 +71,10 @@ public class ModernizerConfigurationDialog extends DialogWrapper {
 	private void createUIComponents() {
 		listTools = new CheckBoxList<>();
 		listTools.addListSelectionListener(this::onToolSelected);
+
+		tToolProperties = new PropertiesTable();
+		tToolProperties.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+		tToolProperties.getSelectionModel().addListSelectionListener(this::onToolPropertySelected);
 	}
 
 
@@ -76,12 +86,19 @@ public class ModernizerConfigurationDialog extends DialogWrapper {
 
 
 	protected void initContent() {
+		setCurrentDescriptionText(null);
+
 		listTools.setPaintBusy(true);
 		ToolCollection.requestAvailableTools(availableTransforms -> {
 			Collections.sort(
 					availableTransforms,
 					(ToolController a, ToolController b) -> a.getName().compareTo(b.getName())
 			);
+
+			// restore defaults on all tools
+			for(ToolController tool : availableTransforms) {
+				tool.onRestoreDefaults();
+			}
 
 			EventQueue.invokeLater(() -> {
 				for(ToolController tool : availableTransforms) {
@@ -107,25 +124,45 @@ public class ModernizerConfigurationDialog extends DialogWrapper {
 	}
 
 
+	protected void onToolPropertySelected(ListSelectionEvent e) {
+		if (currentToolProperties != null) {
+			int index = tToolProperties.getSelectedRow();
+
+			if (index >= 0 && index < currentToolProperties.getRowCount()) {
+				PropertyInstance property = currentToolProperties.getProperty(index);
+				setCurrentDescriptionText(property.getDescriptor().getDescription());
+			}
+			else {
+				setCurrentDescriptionText(null);
+			}
+		}
+	}
+
+
 	protected void setSelectedTool(ToolController tool) {
 		if (currentTool != tool) {
-			if (currentToolComponent != null) {
-				toolsConfigContainer.remove(currentToolComponent);
-				currentToolComponent = null;
-			}
-
 			currentTool = tool;
 
-			if (currentTool != null) {
-				currentToolComponent = currentTool.getConfigPanel();
-			}
+			if (tool != null) {
+				currentToolProperties = new PropertiesTableModel<>(tool, tool.getProperties());
+				tToolProperties.setModel(currentToolProperties);
+				setCurrentDescriptionText(currentTool.getDescription());
 
-			if (currentToolComponent != null) {
-				toolsConfigContainer.add(currentToolComponent, BorderLayout.CENTER);
+				toolsConfigContainer.revalidate();
+				toolsConfigContainer.repaint();
 			}
+		}
+	}
 
-			toolsConfigContainer.revalidate();
-			toolsConfigContainer.repaint();
+
+	public void setCurrentDescriptionText(String text) {
+		if (text != null && !text.isEmpty()) {
+			txtCurrentDescription.setText(text);
+			txtCurrentDescription.setVisible(true);
+		}
+		else {
+			txtCurrentDescription.setText("");
+			txtCurrentDescription.setVisible(false);
 		}
 	}
 

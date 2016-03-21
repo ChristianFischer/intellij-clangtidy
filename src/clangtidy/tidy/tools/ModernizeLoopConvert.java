@@ -23,65 +23,27 @@
 package clangtidy.tidy.tools;
 
 import clangtidy.Options;
-import clangtidy.tidy.ToolController;
-import com.intellij.openapi.ui.ComboBox;
+import clangtidy.util.properties.Description;
+import clangtidy.util.properties.Property;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
-import javax.swing.*;
-import java.awt.event.ItemEvent;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Provides support for the loop-convert modernization.
  */
-public class ModernizeLoopConvert implements ToolController {
-	public final static String POPERTY_NAME_MINCONFIDENCE		= "MinConfidence";
+public class ModernizeLoopConvert extends AbstractToolController {
+	@Property
+	@Description("Describes the maximum risk for possible modifications.")
+	public RiskLevel			MinConfidence		= RiskLevel.reasonable;
 
-	public enum MinConfidenceType {
-		safe,
-		reasonable,
-		risky,
-	}
+	@Property
+	public Integer				MaxCopySize			= 16;
 
-	private ComboBox cmbMinConfidence;
-	private JPanel root;
-
-
-	private MinConfidenceType minConfidenceType;
+	@Property
+	public String				NamingStyle			= "CamelCase";
 
 
 	public ModernizeLoopConvert() {
-		minConfidenceType = Options.getToolProperty(this, POPERTY_NAME_MINCONFIDENCE, MinConfidenceType.reasonable);
-		initValues();
 	}
-
-
-	private void createUIComponents() {
-		cmbMinConfidence = new ComboBox();
-	}
-
-
-	private void initValues() {
-		for(MinConfidenceType type : MinConfidenceType.values()) {
-			cmbMinConfidence.addItem(type);
-		}
-
-		cmbMinConfidence.setSelectedItem(minConfidenceType);
-		cmbMinConfidence.addItemListener(this::onMinConfidenceSelected);
-	}
-
-
-	private void onMinConfidenceSelected(ItemEvent e) {
-		if (e.getStateChange() == ItemEvent.SELECTED) {
-			if (e.getItem() instanceof MinConfidenceType) {
-				minConfidenceType = (MinConfidenceType)e.getItem();
-			}
-		}
-	}
-
-
 
 	@NotNull
 	@Override
@@ -89,22 +51,20 @@ public class ModernizeLoopConvert implements ToolController {
 		return "modernize-loop-convert";
 	}
 
-	@Nullable
-	@Override
-	public JComponent getConfigPanel() {
-		return root;
+
+	public RiskLevel getMinConfidence() {
+		return MinConfidence;
 	}
 
-	@Override
-	public void OnConfigAccepted() {
-		Options.setToolProperty(this, POPERTY_NAME_MINCONFIDENCE, minConfidenceType);
+	public void setMinConfidence(RiskLevel minConfidence) {
+		firePropertyChange("MinConfidence", this.MinConfidence, this.MinConfidence = minConfidence);
 	}
 
-	@Nullable
+
 	@Override
-	public Map<String, String> getConfigParameters() {
-		Map<String,String> params = new HashMap<>(1);
-		params.put(POPERTY_NAME_MINCONFIDENCE, minConfidenceType.toString());
-		return params;
+	public void onRestoreDefaults() {
+		MinConfidence	= Options.getToolProperty(this, "MinConfidence",	RiskLevel.reasonable);
+		MaxCopySize		= Options.getToolProperty(this, "MaxCopySize",		16);
+		NamingStyle		= Options.getToolProperty(this, "NamingStyle",		"CamelCase");
 	}
 }

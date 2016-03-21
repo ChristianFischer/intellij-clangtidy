@@ -23,14 +23,13 @@ package clangtidy;
 
 import clangtidy.tidy.ToolCollection;
 import clangtidy.tidy.ToolController;
+import clangtidy.util.properties.TypeConverter;
 import com.intellij.ide.util.PropertiesComponent;
 import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.openapi.vfs.VirtualFile;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.Objects;
 
 /**
@@ -102,23 +101,13 @@ public class Options {
 	public static @NotNull <T> T getToolProperty(@NotNull ToolController tool, @NotNull String property, @NotNull T defaultValue) {
 		String stringVal = getToolProperty(tool, property);
 
-		if (stringVal != null) {
-			try {
-				Class<?> clazz = defaultValue.getClass();
-				Method m = clazz.getMethod("valueOf", String.class);
-				if (m != null) {
-					Object value = m.invoke(null, stringVal);
+		Class<?> clazz = defaultValue.getClass();
+		Object value = TypeConverter.convertTo(defaultValue.getClass(), stringVal);
 
-					if (clazz.isInstance(value)) {
-						@SuppressWarnings("unchecked")
-						T tValue = (T)value;
-						return tValue;
-					}
-				}
-			}
-			catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
-				e.printStackTrace();
-			}
+		if (clazz.isInstance(value)) {
+			@SuppressWarnings("unchecked")
+			T tValue = (T)value;
+			return tValue;
 		}
 
 		return defaultValue;

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (C) 2016
  * Christian Fischer
  *
@@ -19,40 +19,16 @@
  * Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA 02110-1301 USA
  */
-package clangtidy.tidy.tools;
 
-import clangtidy.tidy.ToolController;
-import clangtidy.util.properties.PropertyInstance;
+package clangtidy.util.properties;
+
 import org.jetbrains.annotations.NotNull;
 
 /**
- * An implementation of {@link ToolController} for
- * simple tools which doesn't provide any configuration.
+ * An exception which occurs, if an object's type does not match the expected type.
  */
-public class SimpleTool implements ToolController {
-	private String name;
-
-	public SimpleTool(@NotNull String name) {
-		this.name = name;
-	}
-
-	@NotNull
-	@Override
-	public String getName() {
-		return name;
-	}
-
-	@NotNull
-	@Override
-	public PropertyInstance[] getProperties() {
-		return new PropertyInstance[0];
-	}
-
-	@Override
-	public void onRestoreDefaults() {
-	}
-
-	@Override
-	public void OnConfigAccepted() {
+public class IllegalTypeException extends RuntimeException {
+	public IllegalTypeException(@NotNull Class expected, Object value) {
+		super("'" + value + "' ("  + value.getClass() + ") is not an instance of '" + expected + "'");
 	}
 }

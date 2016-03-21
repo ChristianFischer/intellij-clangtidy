@@ -22,6 +22,7 @@
 package clangtidy.tidy;
 
 import clangtidy.Options;
+import clangtidy.util.properties.PropertyInstance;
 import clangtidy.yaml.YamlReader;
 import com.intellij.codeInspection.ProblemHighlightType;
 import com.intellij.openapi.project.Project;
@@ -34,6 +35,7 @@ import org.jetbrains.annotations.NotNull;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -134,7 +136,7 @@ public class Scanner {
 		StringBuilder configString = null;
 
 		for(ToolController tool : tools) {
-			Map<String,String> params = tool.getConfigParameters();
+			PropertyInstance[] properties = tool.getProperties();
 
 			if (checksString == null) {
 				checksString = new StringBuilder();
@@ -145,22 +147,28 @@ public class Scanner {
 
 			checksString.append(tool.getName());
 
-			if (params != null) {
-				for(Map.Entry<String,String> entry : params.entrySet()) {
-					if (configString == null) {
-						configString = new StringBuilder();
-					}
-					else {
-						configString.append(',').append(' ');
-					}
+			for(PropertyInstance property : properties) {
+				if (configString == null) {
+					configString = new StringBuilder();
+				}
+				else {
+					configString.append(',').append(' ');
+				}
+
+				try {
+					String propertyName  = property.getDescriptor().getName();
+					String propertyValue = property.getAsString();
 
 					configString.append('{');
 					configString.append("key: ");
-					configString.append('\'').append(tool.getName()).append('.').append(entry.getKey()).append('\'');
+					configString.append('\'').append(tool.getName()).append('.').append(propertyName).append('\'');
 					configString.append(',').append(' ');
 					configString.append("value: ");
-					configString.append('\'').append(entry.getValue()).append('\'');
+					configString.append('\'').append(propertyValue).append('\'');
 					configString.append('}');
+				}
+				catch (InvocationTargetException | IllegalAccessException e) {
+					e.printStackTrace();
 				}
 			}
 		}

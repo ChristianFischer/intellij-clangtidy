@@ -21,11 +21,9 @@
  */
 package clangtidy.tidy;
 
+import clangtidy.util.properties.PropertyInstance;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import javax.swing.*;
-import java.util.Map;
 
 /**
  * This interface represents a single tool for clang-tidy.
@@ -43,16 +41,20 @@ public interface ToolController {
 	default @NotNull String getDisplayName() { return getName(); }
 
 	/**
-	 * Get an UI component to allow the user to configure the settings
-	 * of this tool. May be null, if this tool doesn't provide any options.
+	 * @return a description of this tool.
 	 */
-	default @Nullable JComponent getConfigPanel() { return null; }
+	default @Nullable String getDescription() { return ""; }
 
 	/**
-	 * Create a string representing the current configuration of this tool.
-	 * The string should be in JSON format. May be null, if no configuration is available.
+	 * @return a list of all properties of this tool.
 	 */
-	default @Nullable Map<String,String> getConfigParameters() { return null; }
+	@NotNull PropertyInstance[] getProperties();
+
+	/**
+	 * Notifies the tool to load it's default values.
+	 * This could be called when the settings UI was opened.
+	 */
+	void onRestoreDefaults();
 
 	/**
 	 * Notifies the tool, when the user has accepted the settings.
