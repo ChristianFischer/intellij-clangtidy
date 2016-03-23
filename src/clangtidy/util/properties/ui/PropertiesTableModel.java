@@ -30,6 +30,7 @@ import org.jetbrains.annotations.NotNull;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.TableModel;
 import java.lang.reflect.InvocationTargetException;
+import java.util.Arrays;
 
 /**
  * A subclass of {@link TableModel} which provides the properties
@@ -48,6 +49,12 @@ public class PropertiesTableModel implements TableModel {
 	public PropertiesTableModel(PropertiesContainer container) {
 		this.container	= container;
 		this.properties	= container.getProperties();
+
+		Arrays.sort(
+				properties,
+				(PropertyInstance a, PropertyInstance b)
+						-> a.getDescriptor().getName().compareTo(b.getDescriptor().getName())
+		);
 	}
 
 

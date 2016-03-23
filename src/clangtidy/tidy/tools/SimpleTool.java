@@ -21,11 +21,14 @@
  */
 package clangtidy.tidy.tools;
 
+import clangtidy.Options;
 import clangtidy.tidy.ToolController;
 import clangtidy.util.properties.PropertiesContainer;
+import clangtidy.util.properties.PropertyInstance;
 import clangtidy.util.properties.SimplePropertiesContainer;
 import org.jetbrains.annotations.NotNull;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.Properties;
 
 /**
@@ -60,9 +63,35 @@ public class SimpleTool implements ToolController {
 
 	@Override
 	public void onRestoreDefaults() {
+		for(PropertyInstance property : getProperties().getProperties()) {
+			try {
+				String value = Options.getToolProperty(
+						this,
+						property.getDescriptor().getName(),
+						property.getAsString() // = default value
+				);
+
+				property.setAsString(value);
+			}
+			catch (InvocationTargetException | IllegalAccessException e) {
+				e.printStackTrace();
+			}
+		}
 	}
 
 	@Override
 	public void OnConfigAccepted() {
+		for(PropertyInstance property : getProperties().getProperties()) {
+			try {
+				Options.setToolProperty(
+						this,
+						property.getDescriptor().getName(),
+						property.getAsString()
+				);
+			}
+			catch (InvocationTargetException | IllegalAccessException e) {
+				e.printStackTrace();
+			}
+		}
 	}
 }

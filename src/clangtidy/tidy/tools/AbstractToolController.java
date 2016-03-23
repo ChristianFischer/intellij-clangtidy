@@ -68,12 +68,14 @@ public abstract class AbstractToolController implements ToolController {
 
 	@Override
 	public void OnConfigAccepted() {
-		for(PropertyInstance property : propertiesContainer.getProperties()) {
-			try {
-				Options.setToolProperty(this, property.getDescriptor().getName(), property.getAsString());
-			}
-			catch (InvocationTargetException | IllegalAccessException e) {
-				e.printStackTrace();
+		if (propertiesContainer != null) {
+			for (PropertyInstance property : propertiesContainer.getProperties()) {
+				try {
+					Options.setToolProperty(this, property.getDescriptor().getName(), property.getAsString());
+				}
+				catch (InvocationTargetException | IllegalAccessException e) {
+					e.printStackTrace();
+				}
 			}
 		}
 	}

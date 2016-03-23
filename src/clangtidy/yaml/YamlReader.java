@@ -91,6 +91,7 @@ public class YamlReader {
 		tokenizer.wordChars('-', '-');
 		tokenizer.wordChars('/', '/');
 		tokenizer.wordChars('.', '.');
+		tokenizer.wordChars(',', ',');
 		tokenizer.wordChars(128 + 32, 255);
 
 		try {

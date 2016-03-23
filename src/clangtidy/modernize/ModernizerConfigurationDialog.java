@@ -144,7 +144,7 @@ public class ModernizerConfigurationDialog extends DialogWrapper {
 			currentTool = tool;
 
 			if (tool != null) {
-				currentToolProperties = PropertiesTableModel.create(tool);
+				currentToolProperties = new PropertiesTableModel(tool.getProperties());
 				tToolProperties.setModel(currentToolProperties);
 				setCurrentDescriptionText(currentTool.getDescription());
 

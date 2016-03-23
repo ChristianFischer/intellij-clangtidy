@@ -23,15 +23,15 @@ package clangtidy.tidy;
 
 import clangtidy.Options;
 import clangtidy.tidy.tools.SimpleTool;
+import clangtidy.util.properties.SimplePropertiesContainer;
+import clangtidy.yaml.YamlReader;
 import com.intellij.openapi.extensions.ExtensionPointName;
 import com.intellij.openapi.extensions.Extensions;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Consumer;
 
 /**
@@ -40,6 +40,7 @@ import java.util.function.Consumer;
 public class ToolCollection {
 	private static Set<String>		cachedToolNames;
 	private static List<String>		blacklistedToolNames;
+	private static Properties		defaultProperties;
 
 	static {
 		blacklistedToolNames = new ArrayList<>();
@@ -96,6 +97,92 @@ public class ToolCollection {
 	}
 
 
+	private static boolean fetchDefaultConfig() {
+		if (defaultProperties == null) {
+			defaultProperties = new Properties();
+
+			ProcessWrapper process = new ProcessWrapper(
+					Options.getCLangTidyExe(),
+					"-checks=*",
+					"-dump-config"
+			);
+
+			final StringBuilder configYaml = new StringBuilder();
+			boolean result;
+
+			process.setOutputConsumer(line -> {
+				configYaml.append(line);
+				configYaml.append('\n');
+			});
+
+			try {
+				result = process.run();
+			}
+			catch (IOException e) {
+				e.printStackTrace();
+				result = false;
+			}
+
+			if (result && configYaml.length() != 0) {
+				try {
+					YamlReader yaml = new YamlReader(new ByteArrayInputStream(configYaml.toString().getBytes()));
+					boolean yamlSuccessful = false;
+
+					if (yaml.getRootObject() instanceof Map) {
+						@SuppressWarnings("unchecked")
+						Map<String,Object> root = (Map<String,Object>)yaml.getRootObject();
+						Object optionsObject = root.get("CheckOptions");
+
+						if (optionsObject != null && optionsObject instanceof List) {
+							for(Object optionObject : (List)optionsObject) {
+								if (optionObject instanceof Map) {
+									@SuppressWarnings("unchecked")
+									Map<String,Object> option = (Map<String,Object>)optionObject;
+									Object key   = option.get("key");
+									Object value = option.get("value");
+
+									if (key!=null && value!=null) {
+										defaultProperties.put(key, value);
+										yamlSuccessful = true;
+									}
+								}
+							}
+						}
+					}
+
+					result = yamlSuccessful;
+				}
+				catch (IOException e) {
+					e.printStackTrace();
+					result = false;
+				}
+			}
+
+			return result;
+		}
+
+		return true;
+	}
+
+
+	public static Properties findDefaultPropertiesForTool(String name) {
+		Properties properties = new Properties();
+
+		if (defaultProperties != null) {
+			for(Enumeration keys = defaultProperties.keys(); keys.hasMoreElements(); ) {
+				String key = keys.nextElement().toString();
+				if (key.startsWith(name)) {
+					String keyName = key.substring(name.length() + 1);
+					String value   = defaultProperties.getProperty(key);
+					properties.put(keyName, value);
+				}
+			}
+		}
+
+		return properties;
+	}
+
+
 	private static ToolController createToolForName(@NotNull ToolController[] knownControllers, @NotNull String toolName) {
 		for(ToolController tc : knownControllers) {
 			if (tc.getName().equals(toolName)) {
@@ -103,7 +190,12 @@ public class ToolCollection {
 			}
 		}
 
-		return new SimpleTool(toolName);
+		Properties properties = findDefaultPropertiesForTool(toolName);
+
+		return new SimpleTool(
+				toolName,
+				new SimplePropertiesContainer(properties)
+		);
 	}
 
 
@@ -121,6 +213,10 @@ public class ToolCollection {
 
 			if (cachedToolNames == null) {
 				fetchToolsList();
+			}
+
+			if (defaultProperties == null) {
+				fetchDefaultConfig();
 			}
 
 			assert cachedToolNames != null;
