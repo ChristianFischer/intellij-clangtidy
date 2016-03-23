@@ -51,10 +51,10 @@ public class ModernizerConfigurationDialog extends DialogWrapper {
 	private JPanel toolsConfigContainer;
 	private JTextPane txtCurrentDescription;
 
-	private ToolController							currentTool;
-	private PropertiesTableModel<ToolController>	currentToolProperties;
+	private ToolController			currentTool;
+	private PropertiesTableModel	currentToolProperties;
 
-	private Project									project;
+	private Project					project;
 
 
 	public ModernizerConfigurationDialog(@Nullable Project project) {
@@ -144,7 +144,7 @@ public class ModernizerConfigurationDialog extends DialogWrapper {
 			currentTool = tool;
 
 			if (tool != null) {
-				currentToolProperties = new PropertiesTableModel<>(tool, tool.getProperties());
+				currentToolProperties = PropertiesTableModel.create(tool);
 				tToolProperties.setModel(currentToolProperties);
 				setCurrentDescriptionText(currentTool.getDescription());
 

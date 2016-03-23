@@ -161,24 +161,24 @@ public class PropertiesTest {
 
 	@Test
 	public void testGetValue1() throws InvocationTargetException, IllegalAccessException {
-		PropertyDescriptor<String> readwrite = classdesc.findProperty("readwrite", String.class);
+		ClassPropertyDescriptor<String> readwrite = classdesc.findProperty("readwrite", String.class);
 		assertNotNull(readwrite);
 
 		MyTestClass instance = new MyTestClass();
 
-		PropertyInstance<MyTestClass,String> property = PropertyInstance.create(instance, readwrite);
+		ClassPropertyInstance<MyTestClass,String> property = ClassPropertyInstance.create(instance, readwrite);
 		assertEquals(null, property.get());
 	}
 
 
 	@Test
 	public void testGetValue2() throws InvocationTargetException, IllegalAccessException {
-		PropertyDescriptor<String> withdefaultvalue = classdesc.findProperty("withdefaultvalue", String.class);
+		ClassPropertyDescriptor<String> withdefaultvalue = classdesc.findProperty("withdefaultvalue", String.class);
 		assertNotNull(withdefaultvalue);
 
 		MyTestClass instance = new MyTestClass();
 
-		PropertyInstance<MyTestClass,String> property = PropertyInstance.create(instance, withdefaultvalue);
+		ClassPropertyInstance<MyTestClass,String> property = ClassPropertyInstance.create(instance, withdefaultvalue);
 		assertEquals("DefaultValue", instance.getWithdefaultvalue());
 		assertEquals("DefaultValue", property.get());
 	}
@@ -186,24 +186,24 @@ public class PropertiesTest {
 
 	@Test(expected = IllegalAccessException.class)
 	public void testIllegalAccessException() throws InvocationTargetException, IllegalAccessException {
-		PropertyDescriptor<String> inaccessible = classdesc.findProperty("inaccessible", String.class);
+		ClassPropertyDescriptor<String> inaccessible = classdesc.findProperty("inaccessible", String.class);
 		assertNotNull(inaccessible);
 
 		MyTestClass instance = new MyTestClass();
 
-		PropertyInstance<MyTestClass,String> property = PropertyInstance.create(instance, inaccessible);
+		ClassPropertyInstance<MyTestClass,String> property = ClassPropertyInstance.create(instance, inaccessible);
 		Object value = property.get();
 	}
 
 
 	@Test
 	public void testSetValue() throws InvocationTargetException, IllegalAccessException {
-		PropertyDescriptor<String> readwrite = classdesc.findProperty("readwrite", String.class);
+		ClassPropertyDescriptor<String> readwrite = classdesc.findProperty("readwrite", String.class);
 		assertNotNull(readwrite);
 
 		MyTestClass instance = new MyTestClass();
 
-		PropertyInstance<MyTestClass,String> property = PropertyInstance.create(instance, readwrite);
+		ClassPropertyInstance<MyTestClass,String> property = ClassPropertyInstance.create(instance, readwrite);
 		assertEquals(null, instance.getReadwrite());
 		assertEquals(null, property.get());
 

@@ -23,40 +23,37 @@
 package clangtidy.util.properties;
 
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 /**
- * Interface which describes a property.
- * A property is defined by it's name and type.
- * The value of a property can be read or written with
- * a suitable {@link PropertyInstance} object.
+ * Implementation of {@link PropertiesContainer} which wraps a property
+ * of an class object described via {@link Property} annotations.
  */
-public interface PropertyDescriptor<Type> {
-	/**
-	 * Get the properties name.
-	 */
-	@NotNull
-	String getName();
+public class ClassPropertiesContainer<ClassType> implements PropertiesContainer {
+	private ClassType 								object;
+	private ClassDescriptor<? extends ClassType>	descriptor;
+	private PropertyInstance[]						properties;
 
-	/**
-	 * Get the properties description, if any.
-	 */
-	@Nullable
-	String getDescription();
 
-	/**
-	 * Get the properties type.
-	 */
-	@NotNull
-	Class getType();
+	public static <T> ClassPropertiesContainer<T> create(@NotNull T object) {
+		@SuppressWarnings("unchecked")
+		Class<T> clazz = (Class<T>)object.getClass();
+		ClassDescriptor<T> desc = ClassDescriptor.create(clazz);
 
-	/**
-	 * Checks if the property is readable.
-	 */
-	boolean isReadable();
+		ClassPropertiesContainer<T> container = new ClassPropertiesContainer<>();
+		container.object		= object;
+		container.descriptor	= desc;
+		container.properties	= desc.createPropertiesOf(object);
 
-	/**
-	 * Checks if the property is writable.
-	 */
-	boolean isEditable();
+		return container;
+	}
+
+
+	private ClassPropertiesContainer() {
+	}
+
+
+	@Override
+	public PropertyInstance[] getProperties() {
+		return properties;
+	}
 }

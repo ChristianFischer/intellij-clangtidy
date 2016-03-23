@@ -22,6 +22,7 @@
 package clangtidy.tidy;
 
 import clangtidy.Options;
+import clangtidy.util.properties.PropertiesContainer;
 import clangtidy.util.properties.PropertyInstance;
 import clangtidy.yaml.YamlReader;
 import com.intellij.codeInspection.ProblemHighlightType;
@@ -136,7 +137,7 @@ public class Scanner {
 		StringBuilder configString = null;
 
 		for(ToolController tool : tools) {
-			PropertyInstance[] properties = tool.getProperties();
+			PropertiesContainer propertiesContainer = tool.getProperties();
 
 			if (checksString == null) {
 				checksString = new StringBuilder();
@@ -147,7 +148,7 @@ public class Scanner {
 
 			checksString.append(tool.getName());
 
-			for(PropertyInstance property : properties) {
+			for(PropertyInstance property : propertiesContainer.getProperties()) {
 				if (configString == null) {
 					configString = new StringBuilder();
 				}

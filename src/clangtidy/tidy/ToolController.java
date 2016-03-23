@@ -21,7 +21,7 @@
  */
 package clangtidy.tidy;
 
-import clangtidy.util.properties.PropertyInstance;
+import clangtidy.util.properties.PropertiesContainer;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -48,7 +48,7 @@ public interface ToolController {
 	/**
 	 * @return a list of all properties of this tool.
 	 */
-	@NotNull PropertyInstance[] getProperties();
+	@NotNull PropertiesContainer getProperties();
 
 	/**
 	 * Notifies the tool to load it's default values.

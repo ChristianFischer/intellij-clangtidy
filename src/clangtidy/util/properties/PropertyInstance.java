@@ -22,62 +22,17 @@
 
 package clangtidy.util.properties;
 
-import org.jetbrains.annotations.NotNull;
-
 import java.lang.reflect.InvocationTargetException;
 
 /**
  * Instance of a property, bound to an object.
  * This class can be used to get or set a properties value.
  */
-public class PropertyInstance<ClassType,PropertyType> {
-	private ClassType			object;
-	private PropertyDescriptor	property;
-
-
-	/**
-	 * Creates a {@link PropertyInstance} which binds a property to a corresponding object.
-	 * @param object	An object which owns the given property.
-	 * @param property	A property which should be accessed.
-	 * @param <C>		The objects type.
-	 * @param <T>		The property to bind.
-	 * @return An {@link PropertyInstance} object.
-	 */
-	public static <C,T> PropertyInstance<C,T> create(@NotNull C object, @NotNull PropertyDescriptor<T> property) {
-		return new PropertyInstance<>(object, property);
-	}
-
-
-	/**
-	 * Creates a {@link PropertyInstance} which binds a property to a corresponding object.
-	 * @param object	An object which owns the given property.
-	 * @param property	A property which should be accessed.
-	 */
-	public PropertyInstance(@NotNull ClassType object, @NotNull PropertyDescriptor<PropertyType> property) {
-		if (!property.getField().getDeclaringClass().isInstance(object)) {
-			throw new IllegalArgumentException("'" + object.getClass() + "' is not an owner of property '" + property + "'");
-		}
-
-		this.object		= object;
-		this.property	= property;
-	}
-
-
-	/**
-	 * Get the object, this property instance is bound to.
-	 */
-	public ClassType getObject() {
-		return object;
-	}
-
-
+public abstract class PropertyInstance<PropertyType> {
 	/**
 	 * Get the {@link PropertyDescriptor}, which is bound to this instance.
 	 */
-	public PropertyDescriptor getDescriptor() {
-		return property;
-	}
-
+	public abstract PropertyDescriptor getDescriptor();
 
 	/**
 	 * Set the properties value, either by calling it's setter or by manipulating it's field, if possible.
@@ -85,24 +40,7 @@ public class PropertyInstance<ClassType,PropertyType> {
 	 * @throws InvocationTargetException
 	 * @throws IllegalAccessException
 	 */
-	public void set(PropertyType value) throws InvocationTargetException, IllegalAccessException {
-		if (!property.getType().isInstance(value)) {
-			throw new IllegalTypeException(property.getType(), value);
-		}
-
-		if (property.getSetter() != null) {
-			property.getSetter().invoke(object, value);
-			return;
-		}
-
-		if (property.isPublic()) {
-			property.getField().set(object, value);
-			return;
-		}
-
-		throw new IllegalAccessException();
-	}
-
+	public abstract void set(PropertyType value) throws InvocationTargetException, IllegalAccessException;
 
 	/**
 	 * Set the properties value by providing a string representation of the properties value.
@@ -120,29 +58,13 @@ public class PropertyInstance<ClassType,PropertyType> {
 		set(tValue);
 	}
 
-
 	/**
 	 * Get the properties value, either by calling it's getter or by accessing it's field, if possible.
 	 * @return	The properties current value.
 	 * @throws InvocationTargetException
 	 * @throws IllegalAccessException
 	 */
-	public PropertyType get() throws InvocationTargetException, IllegalAccessException {
-		if (property.getGetter() != null) {
-			@SuppressWarnings("unchecked")
-			PropertyType value = (PropertyType)property.getGetter().invoke(object);
-			return value;
-		}
-
-		if (property.isPublic()) {
-			@SuppressWarnings("unchecked")
-			PropertyType value = (PropertyType)property.getField().get(object);
-			return value;
-		}
-
-		throw new IllegalAccessException();
-	}
-
+	public abstract PropertyType get() throws InvocationTargetException, IllegalAccessException;
 
 	/**
 	 * Get the properties value as it's string representation.

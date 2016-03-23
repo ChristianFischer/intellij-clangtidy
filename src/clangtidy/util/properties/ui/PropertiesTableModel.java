@@ -22,8 +22,8 @@
 
 package clangtidy.util.properties.ui;
 
-import clangtidy.util.properties.ClassDescriptor;
-import clangtidy.util.properties.PropertyDescriptor;
+import clangtidy.util.properties.ClassPropertiesContainer;
+import clangtidy.util.properties.PropertiesContainer;
 import clangtidy.util.properties.PropertyInstance;
 import org.jetbrains.annotations.NotNull;
 
@@ -35,30 +35,19 @@ import java.lang.reflect.InvocationTargetException;
  * A subclass of {@link TableModel} which provides the properties
  * of a class, annotated with {@link clangtidy.util.properties.Property}.
  */
-public class PropertiesTableModel<T> implements TableModel {
-	private T						object;
+public class PropertiesTableModel implements TableModel {
+	private PropertiesContainer		container;
 	private PropertyInstance[]		properties;
 
 
-	public PropertiesTableModel(T object) {
-		@SuppressWarnings("unchecked")
-		Class<T> clazz			= (Class<T>)object.getClass();
-
-		this.object				= object;
-		ClassDescriptor<T> desc	= ClassDescriptor.create(clazz);
-
-		PropertyDescriptor[] pd	= desc.getProperties();
-		properties				= new PropertyInstance[pd.length];
-
-		for(int i=0; i<pd.length; i++) {
-			properties[i] = PropertyInstance.create(object, pd[i]);
-		}
+	public static <T> PropertiesTableModel create(T object) {
+		return new PropertiesTableModel(ClassPropertiesContainer.create(object));
 	}
 
 
-	public PropertiesTableModel(T object, PropertyInstance[] properties) {
-		this.object		= object;
-		this.properties	= properties;
+	public PropertiesTableModel(PropertiesContainer container) {
+		this.container	= container;
+		this.properties	= container.getProperties();
 	}
 
 

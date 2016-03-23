@@ -24,7 +24,8 @@ package clangtidy.tidy.tools;
 
 import clangtidy.Options;
 import clangtidy.tidy.ToolController;
-import clangtidy.util.properties.ClassDescriptor;
+import clangtidy.util.properties.ClassPropertiesContainer;
+import clangtidy.util.properties.PropertiesContainer;
 import clangtidy.util.properties.PropertyInstance;
 import org.jetbrains.annotations.NotNull;
 
@@ -38,6 +39,7 @@ import java.lang.reflect.InvocationTargetException;
  */
 public abstract class AbstractToolController implements ToolController {
 	protected PropertyChangeSupport propertyChangeSupport = new PropertyChangeSupport(this);
+	protected ClassPropertiesContainer<AbstractToolController> propertiesContainer;
 
 
 	public void addPropertyChangeListener(PropertyChangeListener listener) {
@@ -55,16 +57,18 @@ public abstract class AbstractToolController implements ToolController {
 
 
 	@Override
-	public @NotNull PropertyInstance[] getProperties() {
-		@SuppressWarnings("unchecked")
-		Class<AbstractToolController> c = (Class<AbstractToolController>)this.getClass();
-		return ClassDescriptor.create(c).createPropertiesOf(this);
+	public @NotNull PropertiesContainer getProperties() {
+		if (propertiesContainer == null) {
+			propertiesContainer = ClassPropertiesContainer.create(this);
+		}
+
+		return propertiesContainer;
 	}
 
 
 	@Override
 	public void OnConfigAccepted() {
-		for(PropertyInstance property : getProperties()) {
+		for(PropertyInstance property : propertiesContainer.getProperties()) {
 			try {
 				Options.setToolProperty(this, property.getDescriptor().getName(), property.getAsString());
 			}

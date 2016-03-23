@@ -34,14 +34,14 @@ import java.util.Objects;
 /**
  * Presents a description of a class and provides
  * attributes and properties declared in that class.
- * @see PropertyDescriptor
+ * @see ClassPropertyDescriptor
  * @see Property
  */
 public class ClassDescriptor<ClassType> {
 
-	private Class<ClassType>		clazz;
-	private String					description;
-	private PropertyDescriptor[]	properties;
+	private Class<ClassType>			clazz;
+	private String						description;
+	private ClassPropertyDescriptor[]	properties;
 
 
 	/**
@@ -59,16 +59,16 @@ public class ClassDescriptor<ClassType> {
 			cdesc.description = desc.value();
 		}
 
-		List<PropertyDescriptor> propertiesList = new ArrayList<>();
+		List<ClassPropertyDescriptor> propertiesList = new ArrayList<>();
 		findDeclaredProperties(clazz, propertiesList);
 
-		cdesc.properties = propertiesList.toArray(new PropertyDescriptor[propertiesList.size()]);
+		cdesc.properties = propertiesList.toArray(new ClassPropertyDescriptor[propertiesList.size()]);
 
 		return cdesc;
 	}
 
 
-	private static void findDeclaredProperties(@NotNull Class clazz, @NotNull List<PropertyDescriptor> targetList) {
+	private static void findDeclaredProperties(@NotNull Class clazz, @NotNull List<ClassPropertyDescriptor> targetList) {
 		Class superclass = clazz.getSuperclass();
 
 		if (superclass != null) {
@@ -76,7 +76,7 @@ public class ClassDescriptor<ClassType> {
 		}
 
 		for(Field field : clazz.getDeclaredFields()) {
-			PropertyDescriptor desc = PropertyDescriptor.create(field);
+			ClassPropertyDescriptor desc = ClassPropertyDescriptor.create(field);
 			if (desc != null) {
 				targetList.add(desc);
 			}
@@ -111,22 +111,22 @@ public class ClassDescriptor<ClassType> {
 	/**
 	 * Get all properties available in the described class.
 	 */
-	public @NotNull PropertyDescriptor[] getProperties() {
+	public @NotNull ClassPropertyDescriptor[] getProperties() {
 		return properties;
 	}
 
 
 	/**
-	 * Creates a list of {@link PropertyInstance}s for an object of this property class.
+	 * Creates a list of {@link ClassPropertyInstance}s for an object of this property class.
 	 * @param object	An object of type {@link ClassType}.
 	 * @return			A list of properties of the given object.
 	 */
-	public @NotNull <T extends ClassType> PropertyInstance[] createPropertiesOf(T object) {
-		PropertyDescriptor[] propertyDescriptors = getProperties();
-		PropertyInstance[]   propertyInstances   = new PropertyInstance[propertyDescriptors.length];
+	public @NotNull ClassPropertyInstance[] createPropertiesOf(ClassType object) {
+		ClassPropertyDescriptor[] propertyDescriptors = getProperties();
+		ClassPropertyInstance[]   propertyInstances   = new ClassPropertyInstance[propertyDescriptors.length];
 
 		for(int i=0; i<propertyDescriptors.length; ++i) {
-			propertyInstances[i] = PropertyInstance.create(object, propertyDescriptors[i]);
+			propertyInstances[i] = ClassPropertyInstance.create(object, propertyDescriptors[i]);
 			assert propertyInstances[i] != null;
 		}
 
@@ -161,13 +161,13 @@ public class ClassDescriptor<ClassType> {
 	 * @return the requested property or {@code null} when the property was not found.
 	 */
 	public @Nullable <PropertyType>
-	PropertyDescriptor<PropertyType> findProperty(@NotNull String name, @NotNull Class<PropertyType> type) {
-		for(PropertyDescriptor pdesc : properties) {
+	ClassPropertyDescriptor<PropertyType> findProperty(@NotNull String name, @NotNull Class<PropertyType> type) {
+		for(ClassPropertyDescriptor pdesc : properties) {
 			if (Objects.equals(pdesc.getName(), name)) {
 				assert pdesc.getType().equals(type);
 
 				@SuppressWarnings("unchecked")
-				PropertyDescriptor<PropertyType> casted = (PropertyDescriptor<PropertyType>)pdesc;
+				ClassPropertyDescriptor<PropertyType> casted = (ClassPropertyDescriptor<PropertyType>)pdesc;
 
 				return casted;
 			}

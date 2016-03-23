@@ -22,18 +22,28 @@
 package clangtidy.tidy.tools;
 
 import clangtidy.tidy.ToolController;
-import clangtidy.util.properties.PropertyInstance;
+import clangtidy.util.properties.PropertiesContainer;
+import clangtidy.util.properties.SimplePropertiesContainer;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.Properties;
 
 /**
  * An implementation of {@link ToolController} for
  * simple tools which doesn't provide any configuration.
  */
 public class SimpleTool implements ToolController {
-	private String name;
+	private String				name;
+	private PropertiesContainer	propertiesContainer;
 
 	public SimpleTool(@NotNull String name) {
-		this.name = name;
+		this.name					= name;
+		this.propertiesContainer	= new SimplePropertiesContainer(new Properties());
+	}
+
+	public SimpleTool(@NotNull String name, @NotNull PropertiesContainer container) {
+		this.name					= name;
+		this.propertiesContainer	= container;
 	}
 
 	@NotNull
@@ -44,8 +54,8 @@ public class SimpleTool implements ToolController {
 
 	@NotNull
 	@Override
-	public PropertyInstance[] getProperties() {
-		return new PropertyInstance[0];
+	public PropertiesContainer getProperties() {
+		return propertiesContainer;
 	}
 
 	@Override

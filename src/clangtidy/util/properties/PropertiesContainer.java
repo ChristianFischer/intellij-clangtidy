@@ -22,41 +22,9 @@
 
 package clangtidy.util.properties;
 
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
 /**
- * Interface which describes a property.
- * A property is defined by it's name and type.
- * The value of a property can be read or written with
- * a suitable {@link PropertyInstance} object.
+ * Interface for a container, which owns various properties.
  */
-public interface PropertyDescriptor<Type> {
-	/**
-	 * Get the properties name.
-	 */
-	@NotNull
-	String getName();
-
-	/**
-	 * Get the properties description, if any.
-	 */
-	@Nullable
-	String getDescription();
-
-	/**
-	 * Get the properties type.
-	 */
-	@NotNull
-	Class getType();
-
-	/**
-	 * Checks if the property is readable.
-	 */
-	boolean isReadable();
-
-	/**
-	 * Checks if the property is writable.
-	 */
-	boolean isEditable();
+public interface PropertiesContainer {
+	PropertyInstance[] getProperties();
 }
