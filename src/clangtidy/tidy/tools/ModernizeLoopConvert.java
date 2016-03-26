@@ -23,6 +23,8 @@
 package clangtidy.tidy.tools;
 
 import clangtidy.Options;
+import clangtidy.tidy.tools.options.CaseType;
+import clangtidy.tidy.tools.options.RiskLevel;
 import clangtidy.util.properties.Description;
 import clangtidy.util.properties.Property;
 import org.jetbrains.annotations.NotNull;
@@ -39,7 +41,7 @@ public class ModernizeLoopConvert extends AbstractToolController {
 	public Integer				MaxCopySize			= 16;
 
 	@Property
-	public String				NamingStyle			= "CamelCase";
+	public CaseType				NamingStyle			= CaseType.CamelCase;
 
 
 	public ModernizeLoopConvert() {
@@ -65,6 +67,6 @@ public class ModernizeLoopConvert extends AbstractToolController {
 	public void onRestoreDefaults() {
 		MinConfidence	= Options.getToolProperty(this, "MinConfidence",	RiskLevel.reasonable);
 		MaxCopySize		= Options.getToolProperty(this, "MaxCopySize",		16);
-		NamingStyle		= Options.getToolProperty(this, "NamingStyle",		"CamelCase");
+		NamingStyle		= Options.getToolProperty(this, "NamingStyle",		CaseType.CamelCase);
 	}
 }

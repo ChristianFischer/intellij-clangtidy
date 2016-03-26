@@ -23,12 +23,15 @@ package clangtidy.tidy.tools;
 
 import clangtidy.Options;
 import clangtidy.tidy.ToolController;
-import clangtidy.util.properties.PropertiesContainer;
-import clangtidy.util.properties.PropertyInstance;
-import clangtidy.util.properties.SimplePropertiesContainer;
+import clangtidy.tidy.tools.options.CaseType;
+import clangtidy.tidy.tools.options.IncludeStyle;
+import clangtidy.util.properties.*;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
 /**
@@ -39,15 +42,83 @@ public class SimpleTool implements ToolController {
 	private String				name;
 	private PropertiesContainer	propertiesContainer;
 
-	public SimpleTool(@NotNull String name) {
-		this.name					= name;
-		this.propertiesContainer	= new SimplePropertiesContainer(new Properties());
+
+	private static class SimpleToolPropertiesContainer implements PropertiesContainer {
+		private PropertyInstance[] propertyInstances;
+
+
+		private static Class guessPropertyType(@NotNull String name, String defaultValue) {
+			if (
+					(name.endsWith("NamingStyle") || name.endsWith("Case"))
+				&&	(TypeConverter.isValidEnumValue(CaseType.class, defaultValue))
+			) {
+				return CaseType.class;
+			}
+
+			if (
+					(name.endsWith("IncludeStyle"))
+				&&	(TypeConverter.isValidEnumValue(IncludeStyle.class, defaultValue))
+			) {
+				return IncludeStyle.class;
+			}
+
+			return String.class;
+		}
+
+
+		public SimpleToolPropertiesContainer(Properties properties) {
+			List<PropertyInstance> list = new ArrayList<>(properties.size());
+
+			for(Map.Entry entry : properties.entrySet()) {
+				final Object v     = entry.getValue();
+				final String key   = entry.getKey().toString();
+				final String value = v != null ? v.toString() : null;
+
+				PropertyDescriptor pdesc = SimplePropertyDescriptor.create(
+						key,
+						guessPropertyType(key, value)
+				);
+
+				list.add(new PropertyInstance() {
+					@Override
+					public PropertyDescriptor getDescriptor() {
+						return pdesc;
+					}
+
+					@Override
+					public void set(Object value) throws InvocationTargetException, IllegalAccessException {
+						properties.setProperty(key, value!=null ? value.toString() : null);
+					}
+
+					@Override
+					public Object get() throws InvocationTargetException, IllegalAccessException {
+						return properties.getProperty(key);
+					}
+				});
+			}
+
+			propertyInstances = list.toArray(new PropertyInstance[list.size()]);
+		}
+
+		@Override
+		public PropertyInstance[] getProperties() {
+			return propertyInstances;
+		}
 	}
 
-	public SimpleTool(@NotNull String name, @NotNull PropertiesContainer container) {
+
+
+	public SimpleTool(@NotNull String name) {
 		this.name					= name;
-		this.propertiesContainer	= container;
+		this.propertiesContainer	= new SimpleToolPropertiesContainer(new Properties());
 	}
+
+	public SimpleTool(@NotNull String name, @NotNull Properties properties) {
+		this.name					= name;
+		this.propertiesContainer	= new SimpleToolPropertiesContainer(properties);
+	}
+
+
 
 	@NotNull
 	@Override

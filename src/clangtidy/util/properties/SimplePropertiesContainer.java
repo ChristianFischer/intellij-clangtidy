@@ -23,7 +23,6 @@
 package clangtidy.util.properties;
 
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
@@ -56,37 +55,11 @@ public class SimplePropertiesContainer implements PropertiesContainer {
 			final String value = v!=null ? v.toString() : null;
 
 			instances.add(new PropertyInstance() {
+				private PropertyDescriptor descriptor = SimplePropertyDescriptor.create(key, String.class);
+
 				@Override
 				public PropertyDescriptor getDescriptor() {
-					return new PropertyDescriptor() {
-						@NotNull
-						@Override
-						public String getName() {
-							return key;
-						}
-
-						@Nullable
-						@Override
-						public String getDescription() {
-							return null;
-						}
-
-						@NotNull
-						@Override
-						public Class getType() {
-							return String.class;
-						}
-
-						@Override
-						public boolean isReadable() {
-							return true;
-						}
-
-						@Override
-						public boolean isEditable() {
-							return true;
-						}
-					};
+					return descriptor;
 				}
 
 				@Override

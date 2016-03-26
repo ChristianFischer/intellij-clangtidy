@@ -29,6 +29,23 @@ import java.lang.reflect.Method;
  * An utility class to convert strings into various types.
  */
 public class TypeConverter {
+	/**
+	 * Checks if a string matches one of the fields of the given enum class.
+	 * @param enumClass	The expected enum class
+	 * @param value		The string to be tested
+	 * @return {@code true}, if the string matches one of the enum's fields.
+	 */
+	public static boolean isValidEnumValue(Class<? extends Enum> enumClass, String value) {
+		for(Enum enumValue : enumClass.getEnumConstants()) {
+			if (enumValue.toString().equals(value)) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+
 	private static <T> Method findConverterMethod(Class<T> type) {
 		try {
 			return type.getMethod("valueOf", String.class);

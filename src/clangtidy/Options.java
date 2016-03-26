@@ -99,15 +99,20 @@ public class Options {
 
 
 	public static @NotNull <T> T getToolProperty(@NotNull ToolController tool, @NotNull String property, @NotNull T defaultValue) {
-		String stringVal = getToolProperty(tool, property);
+		try {
+			String stringVal = getToolProperty(tool, property);
 
-		Class<?> clazz = defaultValue.getClass();
-		Object value = TypeConverter.convertTo(defaultValue.getClass(), stringVal);
+			Class<?> clazz = defaultValue.getClass();
+			Object value = TypeConverter.convertTo(defaultValue.getClass(), stringVal);
 
-		if (clazz.isInstance(value)) {
-			@SuppressWarnings("unchecked")
-			T tValue = (T)value;
-			return tValue;
+			if (clazz.isInstance(value)) {
+				@SuppressWarnings("unchecked")
+				T tValue = (T)value;
+				return tValue;
+			}
+		}
+		catch (Exception e) {
+			e.printStackTrace();
 		}
 
 		return defaultValue;

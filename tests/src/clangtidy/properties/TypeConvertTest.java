@@ -22,11 +22,11 @@
 
 package clangtidy.properties;
 
-import clangtidy.tidy.tools.RiskLevel;
+import clangtidy.tidy.tools.options.RiskLevel;
 import clangtidy.util.properties.TypeConverter;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 /**
  * Tests converting strings into various types.
@@ -71,5 +71,12 @@ public class TypeConvertTest {
 	@Test(expected = IllegalArgumentException.class)
 	public void testEnumFail() {
 		TypeConverter.convertTo(RiskLevel.class, "nothing");
+	}
+
+
+	@Test
+	public void testIsValidEnumField() {
+		assertTrue(TypeConverter.isValidEnumValue(RiskLevel.class, "risky"));
+		assertFalse(TypeConverter.isValidEnumValue(RiskLevel.class, "something else"));
 	}
 }

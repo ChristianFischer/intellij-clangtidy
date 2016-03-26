@@ -20,7 +20,7 @@
  * Boston, MA 02110-1301 USA
  */
 
-package clangtidy.tidy.tools;
+package clangtidy.tidy.tools.options;
 
 /**
  * Enumerations of risk levels for some modernization checks.

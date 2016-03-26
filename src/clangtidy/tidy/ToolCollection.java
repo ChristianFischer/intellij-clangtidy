@@ -23,7 +23,6 @@ package clangtidy.tidy;
 
 import clangtidy.Options;
 import clangtidy.tidy.tools.SimpleTool;
-import clangtidy.util.properties.SimplePropertiesContainer;
 import clangtidy.yaml.YamlReader;
 import com.intellij.openapi.extensions.ExtensionPointName;
 import com.intellij.openapi.extensions.Extensions;
@@ -194,7 +193,7 @@ public class ToolCollection {
 
 		return new SimpleTool(
 				toolName,
-				new SimplePropertiesContainer(properties)
+				properties
 		);
 	}
 
