@@ -30,13 +30,20 @@ import clangtidy.util.properties.ui.PropertiesTableModel;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.DialogWrapper;
 import com.intellij.openapi.ui.ValidationInfo;
-import com.intellij.ui.CheckBoxList;
+import com.intellij.ui.CheckboxTree;
 import com.intellij.ui.table.JBTable;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
+import javax.swing.event.HyperlinkEvent;
 import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.TreeSelectionEvent;
+import javax.swing.tree.TreePath;
+import javax.swing.tree.TreeSelectionModel;
 import java.awt.*;
+import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -46,13 +53,18 @@ import java.util.List;
  */
 public class ModernizerConfigurationDialog extends DialogWrapper {
 	private JPanel root;
-	private CheckBoxList<ToolController> listTools;
+	private CheckboxTree listTools;
 	private JBTable tToolProperties;
 	private JPanel toolsConfigContainer;
 	private JTextPane txtCurrentDescription;
+	private JEditorPane txtDocumentationLink;
+
+	private ListToolsTreeDataModel<ToolController> listToolsModel;
 
 	private ToolController			currentTool;
 	private PropertiesTableModel	currentToolProperties;
+
+	private ToolController[]		selectedTools;
 
 	private Project					project;
 
@@ -69,8 +81,10 @@ public class ModernizerConfigurationDialog extends DialogWrapper {
 
 
 	private void createUIComponents() {
-		listTools = new CheckBoxList<>();
-		listTools.addListSelectionListener(this::onToolSelected);
+		listTools = new CheckboxTree();
+		listTools.setCellRenderer(new ListToolsTreeCellRenderer());
+		listTools.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
+		listTools.addTreeSelectionListener(this::onToolSelected);
 
 		tToolProperties = new PropertiesTable();
 		tToolProperties.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
@@ -88,7 +102,19 @@ public class ModernizerConfigurationDialog extends DialogWrapper {
 	protected void initContent() {
 		setCurrentDescriptionText(null);
 
+		txtDocumentationLink.addHyperlinkListener(event -> {
+			if (event.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
+				try {
+					Desktop.getDesktop().browse(event.getURL().toURI());
+				}
+				catch (IOException | URISyntaxException e) {
+					e.printStackTrace();
+				}
+			}
+		});
+
 		listTools.setPaintBusy(true);
+		listTools.setModel(null);
 		ToolCollection.requestAvailableTools(availableTransforms -> {
 			Collections.sort(
 					availableTransforms,
@@ -101,22 +127,45 @@ public class ModernizerConfigurationDialog extends DialogWrapper {
 			}
 
 			EventQueue.invokeLater(() -> {
-				for(ToolController tool : availableTransforms) {
-					String name = tool.getDisplayName();
-					boolean enabled = Options.isToolEnabled(tool);
-					listTools.addItem(tool, name, enabled);
-				}
-
+				setData(availableTransforms);
 				listTools.setPaintBusy(false);
 			});
 		});
 	}
 
 
-	protected void onToolSelected(ListSelectionEvent e) {
-		int selectedIndex = listTools.getSelectedIndex();
-		if (selectedIndex != -1) {
-			setSelectedTool(listTools.getItemAt(selectedIndex));
+	protected void setData(@NotNull List<ToolController> tools) {
+		List<ListToolsTreeDataModel.Entry<ToolController>> entries = new ArrayList<>(tools.size());
+		listToolsModel = new ListToolsTreeDataModel<>();
+
+		for(ToolController ctrl : tools) {
+			entries.add(listToolsModel.add(ctrl, ctrl.getName()));
+		}
+
+		listToolsModel.foldEntries();
+
+		listTools.setModel(listToolsModel);
+
+		for(ListToolsTreeDataModel.Entry<ToolController> entry : entries) {
+			ToolController tool = entry.getItem();
+			boolean enabled = Options.isToolEnabled(tool);
+			listTools.setNodeState(entry, enabled);
+
+			// groups with checked nodes should be expanded by default
+			if (enabled) {
+				listTools.expandPath(new TreePath(entry.getParent().getPath()));
+			}
+		}
+	}
+
+
+	protected void onToolSelected(TreeSelectionEvent e) {
+		ListToolsTreeDataModel.Entry[] selection = listTools.getSelectedNodes(ListToolsTreeDataModel.Entry.class, null);
+
+		if (selection.length == 1) {
+			@SuppressWarnings("unchecked")
+			ListToolsTreeDataModel.Entry<ToolController> entry = selection[0];
+			setSelectedTool(entry.getItem());
 		}
 		else {
 			setSelectedTool(null);
@@ -168,24 +217,23 @@ public class ModernizerConfigurationDialog extends DialogWrapper {
 
 
 	public int countSelectedTools() {
-		int count = 0;
-
-		for(int i=listTools.getModel().getSize(); --i>=0;) {
-			if (listTools.isItemSelected(i)) {
-				++count;
-			}
-		}
-
-		return count;
+		ToolController[] selection = listTools.getCheckedNodes(ToolController.class, null);
+		return selection.length;
 	}
 
 
 	public ToolController[] getSelectedTools() {
+		assert selectedTools != null; // should queried only after this dialog was closed
+		return selectedTools;
+	}
+
+
+	private void collectSelectedTools() {
 		List<ToolController> selectedTools = new ArrayList<>();
 
-		for(int i=0; i<listTools.getModel().getSize(); i++) {
-			ToolController tool     = listTools.getItemAt(i);
-			boolean      enabled  = listTools.isItemSelected(i);
+		for(ListToolsTreeDataModel.Entry<ToolController> entry : listToolsModel.getEntries()) {
+			ToolController tool    = entry.getItem();
+			boolean        enabled = entry.isChecked();
 
 			if (tool != null) {
 				Options.setToolEnabled(tool, enabled);
@@ -197,7 +245,7 @@ public class ModernizerConfigurationDialog extends DialogWrapper {
 			}
 		}
 
-		return selectedTools.toArray(new ToolController[selectedTools.size()]);
+		this.selectedTools = selectedTools.toArray(new ToolController[selectedTools.size()]);
 	}
 
 
@@ -219,6 +267,7 @@ public class ModernizerConfigurationDialog extends DialogWrapper {
 
 	@Override
 	protected void doOKAction() {
+		collectSelectedTools();
 		super.doOKAction();
 	}
 }

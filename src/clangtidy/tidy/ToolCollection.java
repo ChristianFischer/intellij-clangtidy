@@ -46,10 +46,6 @@ public class ToolCollection {
 		blacklistedToolNames.add("cert-");
 		blacklistedToolNames.add("clang-analyzer-alpha");
 		blacklistedToolNames.add("clang-analyzer-");
-		blacklistedToolNames.add("cppcoreguidelines-");
-		blacklistedToolNames.add("google-");
-		blacklistedToolNames.add("llvm-");
-		blacklistedToolNames.add("misc-");
 	}
 
 
