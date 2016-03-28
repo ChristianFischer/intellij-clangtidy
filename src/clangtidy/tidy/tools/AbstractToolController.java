@@ -27,6 +27,7 @@ import clangtidy.tidy.ToolController;
 import clangtidy.util.properties.ClassPropertiesContainer;
 import clangtidy.util.properties.PropertiesContainer;
 import clangtidy.util.properties.PropertyInstance;
+import com.intellij.openapi.diagnostic.Logger;
 import org.jetbrains.annotations.NotNull;
 
 import java.beans.PropertyChangeListener;
@@ -74,7 +75,7 @@ public abstract class AbstractToolController implements ToolController {
 					Options.setToolProperty(this, property.getDescriptor().getName(), property.getAsString());
 				}
 				catch (InvocationTargetException | IllegalAccessException e) {
-					e.printStackTrace();
+					Logger.getInstance(this.getClass()).error(e);
 				}
 			}
 		}

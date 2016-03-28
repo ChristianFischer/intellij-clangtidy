@@ -22,6 +22,7 @@
 package clangtidy.util;
 
 import clangtidy.tidy.CompileCommandsNotFoundException;
+import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.util.SystemInfo;
@@ -81,7 +82,7 @@ public class FixCompileCommandsUtil {
 				}
 			}
 			catch (IOException e) {
-				e.printStackTrace();
+				Logger.getInstance(FixCompileCommandsUtil.class).error(e);
 			}
 		}
 
@@ -100,7 +101,7 @@ public class FixCompileCommandsUtil {
 			assert readCount == compileCommandsFile.length();
 		}
 		catch (IOException e) {
-			e.printStackTrace();
+			Logger.getInstance(FixCompileCommandsUtil.class).error(e);
 			content = null;
 		}
 
@@ -120,7 +121,7 @@ public class FixCompileCommandsUtil {
 			out.write(content);
 		}
 		catch (IOException e) {
-			e.printStackTrace();
+			Logger.getInstance(FixCompileCommandsUtil.class).error(e);
 		}
 	}
 }

@@ -25,6 +25,7 @@ import clangtidy.tidy.ToolCollection;
 import clangtidy.tidy.ToolController;
 import clangtidy.util.properties.TypeConverter;
 import com.intellij.ide.util.PropertiesComponent;
+import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.openapi.vfs.VirtualFile;
 import org.jetbrains.annotations.NotNull;
@@ -112,7 +113,7 @@ public class Options {
 			}
 		}
 		catch (Exception e) {
-			e.printStackTrace();
+			Logger.getInstance(Options.class).error(e);
 		}
 
 		return defaultValue;

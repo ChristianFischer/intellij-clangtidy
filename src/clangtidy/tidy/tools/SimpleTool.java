@@ -26,6 +26,7 @@ import clangtidy.tidy.ToolController;
 import clangtidy.tidy.tools.options.CaseType;
 import clangtidy.tidy.tools.options.IncludeStyle;
 import clangtidy.util.properties.*;
+import com.intellij.openapi.diagnostic.Logger;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.InvocationTargetException;
@@ -145,7 +146,7 @@ public class SimpleTool implements ToolController {
 				property.setAsString(value);
 			}
 			catch (InvocationTargetException | IllegalAccessException e) {
-				e.printStackTrace();
+				Logger.getInstance(this.getClass()).error(e);
 			}
 		}
 	}
@@ -161,7 +162,7 @@ public class SimpleTool implements ToolController {
 				);
 			}
 			catch (InvocationTargetException | IllegalAccessException e) {
-				e.printStackTrace();
+				Logger.getInstance(this.getClass()).error(e);
 			}
 		}
 	}

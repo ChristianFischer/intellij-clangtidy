@@ -21,6 +21,7 @@
  */
 package clangtidy.tidy;
 
+import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.roots.ProjectFileIndex;
 import com.intellij.openapi.vfs.VirtualFile;
@@ -33,6 +34,8 @@ import java.util.*;
  * Helper class to apply fixes found by clang to the current project.
  */
 public class FixProjectHelper {
+	private Logger logger = Logger.getInstance(this.getClass());
+
 	private Project						project;
 	private List<FixFileEntry>			fixes;
 
@@ -139,12 +142,12 @@ public class FixProjectHelper {
 
 	public FixFileEntry.Result applyIfSelected(@NotNull FixFileEntry file) {
 		FixFileEntry.Result result = applyIfSelectedInternal(file);
-		System.out.println("apply '" + file + "' => " + result);
+		logger.debug("apply '" + file + "' => " + result);
 		return result;
 	}
 
 
-	public FixFileEntry.Result applyIfSelectedInternal(@NotNull FixFileEntry file) {
+	private FixFileEntry.Result applyIfSelectedInternal(@NotNull FixFileEntry file) {
 		if (file.isSelected()) {
 			return file.apply(project);
 		}

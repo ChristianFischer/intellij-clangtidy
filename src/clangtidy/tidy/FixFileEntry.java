@@ -22,6 +22,7 @@
 package clangtidy.tidy;
 
 import com.intellij.openapi.command.WriteCommandAction;
+import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.fileEditor.FileDocumentManager;
 import com.intellij.openapi.project.Project;
@@ -260,7 +261,7 @@ public class FixFileEntry {
 			prepared = true;
 		}
 		catch(IOException e) {
-			e.printStackTrace();
+			Logger.getInstance(this.getClass()).error(e);
 		}
 	}
 }

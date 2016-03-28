@@ -22,6 +22,7 @@
 package clangtidy.tidy;
 
 import clangtidy.util.NotificationFactory;
+import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.Project;
@@ -85,7 +86,7 @@ public class ScannerBackgroundTask extends Task.Modal {
 				successful = scanner.runOnFiles(file, scannerResult);
 			}
 			catch(IOException e) {
-				e.printStackTrace();
+				Logger.getInstance(this.getClass()).error(e);
 				successful = false;
 			}
 

@@ -21,6 +21,7 @@
  */
 package clangtidy.tidy;
 
+import com.intellij.openapi.diagnostic.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -59,8 +60,13 @@ public class ProcessWrapper {
 	}
 
 
-	void addArgument(@NotNull String argument) {
+	public void addArgument(@NotNull String argument) {
 		command.add(argument);
+	}
+
+
+	public String getCommand() {
+		return String.join(" ", command);
 	}
 
 
@@ -75,8 +81,6 @@ public class ProcessWrapper {
 
 
 	public boolean run() throws IOException {
-		System.out.println("Run command: " + String.join(" ", command));
-
 		ProcessBuilder pb = new ProcessBuilder(command);
 		boolean success = false;
 		Process process = pb.start();
@@ -99,21 +103,21 @@ public class ProcessWrapper {
 			}
 		}
 		catch(InterruptedException e) {
-			e.printStackTrace();
+			Logger.getInstance(this.getClass()).error(e);
 		}
 
 		try {
 			errorHandler.join();
 		}
 		catch(InterruptedException e) {
-			e.printStackTrace();
+			Logger.getInstance(this.getClass()).error(e);
 		}
 
 		try {
 			outputHandler.join();
 		}
 		catch(InterruptedException e) {
-			e.printStackTrace();
+			Logger.getInstance(this.getClass()).error(e);
 		}
 
 		return success;
@@ -148,7 +152,7 @@ public class ProcessWrapper {
 				}
 			}
 			catch(IOException e) {
-				e.printStackTrace();
+				Logger.getInstance(this.getClass()).error(e);
 			}
 		}
 	}

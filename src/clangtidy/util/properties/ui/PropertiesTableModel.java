@@ -25,6 +25,7 @@ package clangtidy.util.properties.ui;
 import clangtidy.util.properties.ClassPropertiesContainer;
 import clangtidy.util.properties.PropertiesContainer;
 import clangtidy.util.properties.PropertyInstance;
+import com.intellij.openapi.diagnostic.Logger;
 import org.jetbrains.annotations.NotNull;
 
 import javax.swing.event.TableModelListener;
@@ -114,7 +115,7 @@ public class PropertiesTableModel implements TableModel {
 					return getProperty(rowIndex).get();
 				}
 				catch (InvocationTargetException | IllegalAccessException e) {
-					e.printStackTrace();
+					Logger.getInstance(this.getClass()).error(e);
 				}
 			}
 		}
@@ -137,7 +138,7 @@ public class PropertiesTableModel implements TableModel {
 				}
 			}
 			catch (IllegalAccessException | InvocationTargetException e) {
-				e.printStackTrace();
+				Logger.getInstance(this.getClass()).error(e);
 			}
 		}
 	}

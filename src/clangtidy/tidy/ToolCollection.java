@@ -24,6 +24,7 @@ package clangtidy.tidy;
 import clangtidy.Options;
 import clangtidy.tidy.tools.SimpleTool;
 import clangtidy.yaml.YamlReader;
+import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.extensions.ExtensionPointName;
 import com.intellij.openapi.extensions.Extensions;
 import org.jetbrains.annotations.NotNull;
@@ -65,6 +66,8 @@ public class ToolCollection {
 			);
 
 			process.setOutputConsumer(line -> {
+				Log.clangtidy.debug(line);
+
 				if (line.startsWith("    ")) {
 					String item = line.trim();
 
@@ -78,11 +81,16 @@ public class ToolCollection {
 				}
 			});
 
+			process.setErrorConsumer(
+					Log.clangtidy::warn
+			);
+
 			try {
+				Log.clangtidy.info("Run command: " + process.getCommand());
 				return process.run();
 			}
 			catch (IOException e) {
-				e.printStackTrace();
+				Logger.getInstance(ToolCollection.class).error(e);
 			}
 
 			return false;
@@ -106,15 +114,21 @@ public class ToolCollection {
 			boolean result;
 
 			process.setOutputConsumer(line -> {
+				Log.clangtidy.debug(line);
 				configYaml.append(line);
 				configYaml.append('\n');
 			});
 
+			process.setErrorConsumer(
+					Log.clangtidy::warn
+			);
+
 			try {
+				Log.clangtidy.info("Run command: " + process.getCommand());
 				result = process.run();
 			}
 			catch (IOException e) {
-				e.printStackTrace();
+				Logger.getInstance(ToolCollection.class).error(e);
 				result = false;
 			}
 
@@ -148,7 +162,7 @@ public class ToolCollection {
 					result = yamlSuccessful;
 				}
 				catch (IOException e) {
-					e.printStackTrace();
+					Logger.getInstance(ToolCollection.class).error(e);
 					result = false;
 				}
 			}

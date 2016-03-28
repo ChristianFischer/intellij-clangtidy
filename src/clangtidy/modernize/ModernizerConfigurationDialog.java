@@ -27,6 +27,7 @@ import clangtidy.tidy.ToolController;
 import clangtidy.util.properties.PropertyInstance;
 import clangtidy.util.properties.ui.PropertiesTable;
 import clangtidy.util.properties.ui.PropertiesTableModel;
+import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.DialogWrapper;
 import com.intellij.openapi.ui.ValidationInfo;
@@ -108,7 +109,7 @@ public class ModernizerConfigurationDialog extends DialogWrapper {
 					Desktop.getDesktop().browse(event.getURL().toURI());
 				}
 				catch (IOException | URISyntaxException e) {
-					e.printStackTrace();
+					Logger.getInstance(this.getClass()).error(e);
 				}
 			}
 		});

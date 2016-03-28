@@ -27,6 +27,7 @@ import clangtidy.util.properties.PropertiesContainer;
 import clangtidy.util.properties.PropertyInstance;
 import clangtidy.yaml.YamlReader;
 import com.intellij.codeInspection.ProblemHighlightType;
+import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.TextRange;
 import com.intellij.openapi.vfs.LocalFileSystem;
@@ -174,7 +175,7 @@ public class Scanner {
 					configString.append('}');
 				}
 				catch (InvocationTargetException | IllegalAccessException e) {
-					e.printStackTrace();
+					Logger.getInstance(this.getClass()).error(e);
 				}
 			}
 		}
@@ -240,7 +241,7 @@ public class Scanner {
 
 		process.setOutputConsumer(
 				(String line) -> {
-					System.out.println("Tidy: " + line);
+					Log.clangtidy.debug(line);
 
 					Matcher m = LINE_ISSUE_PATTERN.matcher(line);
 					if (m.matches()) {
@@ -275,14 +276,15 @@ public class Scanner {
 		);
 
 		process.setErrorConsumer(
-				(String line) -> System.err.println("CLangTidy: " + line)
+				Log.clangtidy::warn
 		);
 
 		try {
+			Log.clangtidy.info("Run command: " + process.getCommand());
 			success = process.run();
 		}
 		catch(IOException e) {
-			e.printStackTrace();
+			Logger.getInstance(this.getClass()).error(e);
 		}
 
 		if (
@@ -327,7 +329,7 @@ public class Scanner {
 			}
 		}
 		catch (IOException e) {
-			e.printStackTrace();
+			Logger.getInstance(this.getClass()).error(e);
 		}
 	}
 

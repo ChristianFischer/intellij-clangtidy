@@ -28,6 +28,7 @@ import clangtidy.tidy.ScannerResult;
 import com.intellij.codeInspection.InspectionManager;
 import com.intellij.codeInspection.LocalInspectionTool;
 import com.intellij.codeInspection.ProblemDescriptor;
+import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.fileEditor.FileDocumentManager;
 import com.intellij.openapi.util.TextRange;
@@ -114,7 +115,7 @@ public class CLangTidyLocalInspection extends LocalInspectionTool {
 			}
 		}
 		catch (CompileCommandsNotFoundException | IOException e) {
-			e.printStackTrace();
+			Logger.getInstance(this.getClass()).error(e);
 		}
 
 		return problems;

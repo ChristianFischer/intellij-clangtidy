@@ -28,6 +28,7 @@ import com.intellij.diff.DiffRequestFactory;
 import com.intellij.diff.InvalidDiffRequestException;
 import com.intellij.diff.merge.MergeRequest;
 import com.intellij.diff.merge.MergeResult;
+import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.fileEditor.FileDocumentManager;
 import com.intellij.openapi.fileTypes.FileType;
@@ -80,7 +81,7 @@ public class MergeFixesHelper {
 			}
 		}
 		catch (InvalidDiffRequestException e) {
-			e.printStackTrace();
+			Logger.getInstance(MergeFixesHelper.class).error(e);
 		}
 
 		return false;
