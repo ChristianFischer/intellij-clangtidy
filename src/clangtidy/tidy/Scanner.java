@@ -22,6 +22,7 @@
 package clangtidy.tidy;
 
 import clangtidy.Options;
+import clangtidy.util.FixCompileCommandsUtil;
 import clangtidy.util.properties.PropertiesContainer;
 import clangtidy.util.properties.PropertyInstance;
 import clangtidy.yaml.YamlReader;
@@ -101,7 +102,7 @@ public class Scanner {
 		// determine where to store fixes
 		fixesTargetFile = new File(cMakeWorkspace.getProjectGeneratedDir() + "/clang-tidy.yaml");
 
-		// todo: find out, which is the active configuration for the current project
+		// todo: find out, which is the active configuration for the current project, or use __default__ directory
 		File configDir = cMakeWorkspace.getConfigurationGeneratedDir("Debug");
 		if (configDir == null) {
 			throw new CompileCommandsNotFoundException(cMakeWorkspace);
@@ -111,6 +112,10 @@ public class Scanner {
 
 		if (!compileCommandsFile.exists()) {
 			throw new CompileCommandsNotFoundException(cMakeWorkspace);
+		}
+
+		if (FixCompileCommandsUtil.needsToFixWindowsPaths(compileCommandsFile)) {
+			FixCompileCommandsUtil.fixWindowsPaths(compileCommandsFile);
 		}
 
 		ready = true;

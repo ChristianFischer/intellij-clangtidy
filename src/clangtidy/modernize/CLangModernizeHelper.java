@@ -23,7 +23,7 @@ package clangtidy.modernize;
 
 import clangtidy.Options;
 import clangtidy.tidy.*;
-import clangtidy.util.FixCompileCommandsNotFound;
+import clangtidy.util.FixCompileCommandsUtil;
 import clangtidy.util.NotificationFactory;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.project.Project;
@@ -63,18 +63,37 @@ public class CLangModernizeHelper {
 			return false;
 		}
 
+		Scanner scanner;
+		try {
+			scanner = new Scanner(project);
+			scanner.setFixIssues(Scanner.FixIssues.StoreFixes);
+		}
+		catch(CompileCommandsNotFoundException e) {
+			FixCompileCommandsUtil.askToFixMissingCompileCommands(project, e);
+			return false;
+		}
+
+		return configureAndStartScanner(scanner, files);
+	}
+
+
+	public boolean configureAndStartScanner(Scanner scanner, VirtualFile[] files) {
 		ModernizerConfigurationDialog dialog = new ModernizerConfigurationDialog(project);
 		boolean success = dialog.showAndGet();
 
 		if (success) {
-			success = startScanner(files, dialog.getSelectedTools());
+			for(ToolController tool : dialog.getSelectedTools()) {
+				scanner.addTool(tool);
+			}
+
+			success = startScanner(scanner, files);
 		}
 
 		return success;
 	}
 
 
-	public boolean startScanner(VirtualFile[] files, ToolController[] selectedTools) {
+	public boolean startScanner(Scanner scanner, VirtualFile[] files) {
 		if (files == null || files.length == 0) {
 			NotificationFactory.notifyNoFilesSelected(project);
 			return false;
@@ -87,20 +106,6 @@ public class CLangModernizeHelper {
 
 		if (sourceFiles.getFilesToProcess().isEmpty()) {
 			NotificationFactory.notifyNoFilesSelected(project);
-			return false;
-		}
-
-		Scanner scanner;
-		try {
-			scanner = new Scanner(project);
-			scanner.setFixIssues(Scanner.FixIssues.StoreFixes);
-
-			for(ToolController tool : selectedTools) {
-				scanner.addTool(tool);
-			}
-		}
-		catch(CompileCommandsNotFoundException e) {
-			FixCompileCommandsNotFound.fix(project, e);
 			return false;
 		}
 
