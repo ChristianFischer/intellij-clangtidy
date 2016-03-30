@@ -38,6 +38,7 @@ import java.util.Map;
  */
 public class YamlReader {
 	private File				file			= null;
+	private InputStreamReader	reader			= null;
 	private StreamTokenizer		tokenizer		= null;
 	private Object				rootObject		= null;
 
@@ -71,7 +72,7 @@ public class YamlReader {
 	private Object read(InputStream in) throws IOException {
 		Object data = null;
 
-		InputStreamReader reader = new InputStreamReader(in);
+		reader = new InputStreamReader(in);
 
 		tokenizer = new StreamTokenizer(reader);
 		tokenizer.resetSyntax();
@@ -82,8 +83,6 @@ public class YamlReader {
 		tokenizer.ordinaryChar('.'); // dot required for outro mark
 		tokenizer.whitespaceChars('\0', ' ');
 		tokenizer.commentChar('#');
-		tokenizer.quoteChar('\'');
-		tokenizer.quoteChar('"');
 		tokenizer.wordChars('a', 'z');
 		tokenizer.wordChars('A', 'Z');
 		tokenizer.wordChars('0', '9');
@@ -95,15 +94,15 @@ public class YamlReader {
 		tokenizer.wordChars(128 + 32, 255);
 
 		try {
-			expect(KEY_INTRO);
-			expect(StreamTokenizer.TT_EOL);
-
+			readIntro();
 			data = readData();
+			readOutro();
 		}
 		finally {
 			in.close();
 
 			tokenizer = null;
+			reader = null;
 		}
 
 		return data;
@@ -124,8 +123,7 @@ public class YamlReader {
 
 			case StreamTokenizer.TT_WORD: {
 				if (KEY_OUTRO.equals(tokenizer.sval)) {
-					expect(KEY_OUTRO);
-					expect(StreamTokenizer.TT_EOF);
+					tokenizer.pushBack();
 					break;
 				}
 				else {
@@ -136,17 +134,31 @@ public class YamlReader {
 			}
 
 			case '.': {
-				expect('.');
-				expect('.');
-				expect('.');
-				ignoreToken(StreamTokenizer.TT_EOL);
-				expect(StreamTokenizer.TT_EOF);
+				// first character of outro
 				tokenizer.pushBack();
 				break;
 			}
 		}
 
 		return data;
+	}
+
+
+	private void readIntro() throws IOException {
+		expect(KEY_INTRO);
+		expect(StreamTokenizer.TT_EOL);
+	}
+
+
+	private void readOutro() throws IOException {
+		expect(KEY_OUTRO);
+
+		// ignore all linebreaks after outro mark
+		while(true) {
+			if (!(ignoreToken(StreamTokenizer.TT_EOL))) break;
+		}
+
+		expect(StreamTokenizer.TT_EOF);
 	}
 
 
@@ -227,7 +239,19 @@ public class YamlReader {
 				case '\'': {
 					if (currentState == StateKey) {
 						currentState = StateValue;
-						currentValue = tokenizer.sval;
+						currentValue = readQuotedString('\'', false);
+					}
+					else {
+						unexpectedState();
+					}
+
+					break;
+				}
+
+				case '"': {
+					if (currentState == StateKey) {
+						currentState = StateValue;
+						currentValue = readQuotedString('"', true);
 					}
 					else {
 						unexpectedState();
@@ -254,12 +278,10 @@ public class YamlReader {
 							currentValue = readData();
 						}
 
-						if (currentValue != null) {
-							map.put(currentKey, currentValue);
-							currentKey = null;
-							currentValue = null;
-							currentState = StateNone;
-						}
+						map.put(currentKey, currentValue);
+						currentKey = null;
+						currentValue = null;
+						currentState = StateNone;
 					}
 
 					break;
@@ -287,12 +309,63 @@ public class YamlReader {
 	}
 
 
+	protected String readQuotedString(int quoteToken, boolean handleBackslash) throws IOException {
+		StringBuilder sb = new StringBuilder();
 
-	protected void ignoreToken(int expectedToken) throws IOException {
+		do {
+			int token = reader.read();
+			if (token == quoteToken && quoteToken != -1) {
+				break;
+			}
+
+			switch(token) {
+				case '\\': {
+					if (handleBackslash) {
+						int next = reader.read();
+						switch(next) {
+							case 'b':	sb.append('\b');	break;
+							case 'f':	sb.append('\f');	break;
+							case 'n':	sb.append('\n');	break;
+							case 'r':	sb.append('\r');	break;
+							case 't':	sb.append('\t');	break;
+							case '"':	sb.append('"');		break;
+							case '\'':	sb.append('\'');	break;
+							case '\\':	sb.append('\\');	break;
+
+							default: {
+								unexpectedState();
+								break;
+							}
+						}
+					}
+					else {
+						sb.append('\\');
+					}
+
+					break;
+				}
+
+				default: {
+					sb.append((char)token);
+					break;
+				}
+			}
+		}
+		while(true);
+
+		return sb.toString();
+	}
+
+
+
+	protected boolean ignoreToken(int expectedToken) throws IOException {
 		int token = tokenizer.nextToken();
 		if (token != expectedToken) {
 			tokenizer.pushBack();
+			return false;
 		}
+
+		return true;
 	}
 
 

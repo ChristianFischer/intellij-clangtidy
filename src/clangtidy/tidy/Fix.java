@@ -23,6 +23,7 @@ package clangtidy.tidy;
 
 import com.intellij.openapi.util.TextRange;
 import com.intellij.openapi.vfs.VirtualFile;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
 
@@ -36,7 +37,7 @@ public class Fix {
 	private String		replacement;
 
 
-	public Fix(VirtualFile file, TextRange range, String replacement) {
+	public Fix(@NotNull VirtualFile file, @NotNull TextRange range, @NotNull String replacement) {
 		this.file			= file;
 		this.range			= range;
 		this.replacement	= replacement;

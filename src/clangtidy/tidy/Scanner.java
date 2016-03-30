@@ -349,8 +349,11 @@ public class Scanner {
 			int iOffset = ((Number)offset).intValue();
 			int iLength = ((Number)length).intValue();
 
+			VirtualFile file = LocalFileSystem.getInstance().findFileByPath(fileName.toString());
+			assert file != null;
+
 			return new Fix(
-					LocalFileSystem.getInstance().findFileByPath(fileName.toString()),
+					file,
 					TextRange.create(iOffset, iOffset + iLength),
 					replacement.toString()
 			);

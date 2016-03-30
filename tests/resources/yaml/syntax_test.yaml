@@ -1,0 +1,7 @@
+---
+PlainText:              JustSomeText
+QuotedString1:          'Some other text 1'
+QuotedString2:          "Some other text 2"
+EscapedCharacters:      "contains escaped characters: \n \" \\ \'"
+NotEscapedCharacters:   'does not contain escaped characters: " \n \" \\ \'
+...

@@ -92,13 +92,15 @@ public class FixCompileCommandsUtil {
 
 	public static void fixWindowsPaths(@NotNull File compileCommandsFile) {
 		assert compileCommandsFile.exists();
-		byte[] content;
+		String content;
 
 		// read the file's full content
 		try(InputStream in = new FileInputStream(compileCommandsFile)) {
-			content = new byte[(int)compileCommandsFile.length()];
-			int readCount = in.read(content);
+			byte[] data = new byte[(int)compileCommandsFile.length()];
+			int readCount = in.read(data);
 			assert readCount == compileCommandsFile.length();
+
+			content = new String(data);
 		}
 		catch (IOException e) {
 			Logger.getInstance(FixCompileCommandsUtil.class).error(e);
@@ -110,15 +112,11 @@ public class FixCompileCommandsUtil {
 		}
 
 		// replace all backslash with slash
-		for(int i=content.length; --i>=0;) {
-			if (content[i] == '\\') {
-				content[i] = '/';
-			}
-		}
+		content = content.replace("\\\\", "/");
 
 		// write back to the file
 		try(OutputStream out = new FileOutputStream(compileCommandsFile)) {
-			out.write(content);
+			out.write(content.getBytes());
 		}
 		catch (IOException e) {
 			Logger.getInstance(FixCompileCommandsUtil.class).error(e);
