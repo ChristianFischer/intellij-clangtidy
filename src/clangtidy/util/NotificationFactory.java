@@ -22,6 +22,7 @@
 package clangtidy.util;
 
 import clangtidy.Options;
+import clangtidy.tidy.ScannerExecutionException;
 import com.intellij.notification.Notification;
 import com.intellij.notification.NotificationType;
 import com.intellij.openapi.project.Project;
@@ -96,6 +97,19 @@ public class NotificationFactory {
 				GroupId,
 				"clang-tidy failed on file",
 				file.getPath(),
+				NotificationType.ERROR
+		);
+
+		notification.notify(project);
+	}
+
+
+	public static void notifyScanFailedOnFile(@NotNull Project project, @NotNull ScannerExecutionException ex) {
+		Notification notification = new Notification(
+				GroupId,
+				"clang-tidy failed on file",
+				"<code>" + ex.getFile().getPath() + "</code>:<br/>"
+				+ ex.getLog(),
 				NotificationType.ERROR
 		);
 

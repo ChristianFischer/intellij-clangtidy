@@ -275,8 +275,12 @@ public class Scanner {
 				}
 		);
 
+		final StringBuilder errorLog = new StringBuilder();
 		process.setErrorConsumer(
-				Log.clangtidy::warn
+				line -> {
+					Log.clangtidy.warn(line);
+					errorLog.append(line).append('\n');
+				}
 		);
 
 		try {
@@ -294,6 +298,13 @@ public class Scanner {
 		) {
 			readFixesList(fixesTargetFile, result);
 			fixesTargetFile.delete();
+		}
+
+		if (!success && errorLog.length() != 0) {
+			throw new ScannerExecutionException(
+					file,
+					errorLog.toString()
+			);
 		}
 
 		return success && !readingFileFailed[0];

@@ -85,13 +85,17 @@ public class ScannerBackgroundTask extends Task.Modal {
 			try {
 				successful = scanner.runOnFiles(file, scannerResult);
 			}
+			catch (ScannerExecutionException e) {
+				NotificationFactory.notifyScanFailedOnFile(project, e);
+				successful = false;
+			}
 			catch(IOException e) {
 				Logger.getInstance(this.getClass()).error(e);
 				successful = false;
 			}
 
 			if (!successful) {
-				NotificationFactory.notifyScanFailedOnFile(project, file);
+			//	NotificationFactory.notifyScanFailedOnFile(project, file);
 				scannerResult.addFailedFile(file);
 			}
 
