@@ -14,6 +14,7 @@ to your code.
 Some checks of clang-tidy, formerly known as clang-modernize, checks for
 code constructs, which can be converted into modern C++11 syntax. For example
 this includes:
+
 * converting iterator based or index based for loops into range based
 foreach loops
 * adding the `override` keyword to overridden functions in subclasses
@@ -21,7 +22,8 @@ foreach loops
 * replacing function arguments to match the pass-by-value idiom to
 gain advantage from new move semantics
 
-To learn more about clang-tidy  visit
+To learn more about clang-tidy visit
+
 * [clang-tidy documentation](http://clang.llvm.org/extra/clang-tidy/)
 * [list of all clang-tidy checks](http://clang.llvm.org/extra/clang-tidy/checks/list.html)
 
@@ -43,4 +45,3 @@ To learn more about clang-tidy  visit
 4. When finished, a list of all files containing issues will be displayed to you.
    Select the files you want to apply or click *merge* to view suggested fixes
    for a single selected file and apply them one by one.
-
