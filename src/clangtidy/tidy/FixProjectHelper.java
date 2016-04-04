@@ -96,6 +96,11 @@ public class FixProjectHelper {
 		for(FixFileEntry entry : fixes) {
 			this.fixes.add(entry);
 		}
+
+		Collections.sort(
+				this.fixes,
+				(FixFileEntry a, FixFileEntry b) -> a.getFile().toString().compareTo(b.getFile().toString())
+		);
 	}
 
 

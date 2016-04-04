@@ -24,7 +24,7 @@
               <forms/>
             </constraints>
             <properties>
-              <text value="Apply"/>
+              <text value="&amp;Apply"/>
             </properties>
           </component>
           <component id="4b235" class="javax.swing.JButton" binding="btMergeSelected">
@@ -34,17 +34,24 @@
             </constraints>
             <properties>
               <selected value="false"/>
-              <text value="Merge"/>
+              <text value="&amp;Merge"/>
             </properties>
           </component>
         </children>
       </grid>
-      <component id="b1eae" class="com.intellij.ui.CheckBoxList" binding="listMergeableFiles" custom-create="true">
+      <scrollpane id="b3df1">
         <constraints border-constraint="Center"/>
-        <properties>
-          <model/>
-        </properties>
-      </component>
+        <properties/>
+        <border type="none"/>
+        <children>
+          <component id="b1eae" class="com.intellij.ui.CheckBoxList" binding="listMergeableFiles" custom-create="true">
+            <constraints/>
+            <properties>
+              <model/>
+            </properties>
+          </component>
+        </children>
+      </scrollpane>
     </children>
   </grid>
 </form>

@@ -140,7 +140,7 @@ public class ListToolsTreeDataModel<T> implements TreeModel {
 
 			// force folding all children, if there's at least one leaf node
 			// this helps reducing unwanted folders like 'use/auto', 'use/default'...
-			if (this.hasLeafNodes()) {
+			if (this.hasLeafNodes() && !isRoot()) {
 				force = true;
 			}
 
