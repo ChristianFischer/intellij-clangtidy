@@ -1,20 +1,56 @@
 <idea-plugin version="2">
-  <id>com.your.company.unique.plugin.id</id>
-  <name>CLang tidy</name>
+  <id>de.wieselbau.clion.clangtidy</id>
+  <name>CLion clang-tidy integration</name>
   <version>1.0</version>
-  <vendor email="support@yourcompany.com" url="http://www.yourcompany.com">YourCompany</vendor>
+  <vendor
+          email="baldur@wieselbau.de"
+          url="http://www.bitbucket.com/baldur/clion-clangtidy"
+  >Christian Fischer</vendor>
 
   <description><![CDATA[
-      A plugin to apply clang-tidy transforms to your project.
-    ]]></description>
+<p>
+This plugin provides an user interface within CLion to easily use clang-tidy
+on your project's sources.
+</p>
 
-  <change-notes><![CDATA[
-      Add change notes here.<br>
-      <em>most HTML tags may be used</em>
-    ]]>
+<p>
+clang-tidy is part of CLang, the C/C++/ObjectiveC compiler backend of LLVM.
+</p>
+
+<p>
+When running clang-tidy, it performs a static code analysis to find some
+common issues and code style violations and provides fixes which can be applied
+to your code.
+</p>
+
+<p>
+Some checks of clang-tidy, formerly known as clang-modernize, checks for
+code constructs, which can be converted into modern C++11 syntax. For example
+this includes:
+<ul>
+<li>converting iterator based or index based for loops into range based
+foreach loops</li>
+<li>adding the <code>override</code> keyword to overridden functions in subclasses</li>
+<li>replacing <code>NULL</code> macros with <code>nullptr</code></li>
+<li>replacing function arguments to match the pass-by-value idiom to
+gain advantage from new move semantics</li>
+</ul>
+</p>
+
+<p>
+To learn more about clang-tidy visit
+<ul>
+<li><a href="http://clang.llvm.org/extra/clang-tidy/">clang-tidy documentation</a></li>
+<li><a href="http://clang.llvm.org/extra/clang-tidy/checks/list.html">list of all clang-tidy checks</a></li>
+</ul>
+</p>
+]]></description>
+
+  <!--
+  <change-notes>
   </change-notes>
+  -->
 
-  <!-- please see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/build_number_ranges.html for description -->
   <idea-version since-build="141.0"/>
 
   <depends>com.intellij.modules.clion</depends>
@@ -22,14 +58,14 @@
   <extensionPoints>
     <extensionPoint
             name="ToolController"
-            interface="clangtidy.tidy.ToolController"
+            interface="de.wieselbau.clion.clangtidy.tidy.ToolController"
     />
   </extensionPoints>
 
   <extensions defaultExtensionNs="com.intellij">
     <localInspection
-            implementationClass="clangtidy.inspection.CLangTidyLocalInspection"
-            displayName="CLangTidyLocal"
+            implementationClass="de.wieselbau.clion.clangtidy.inspection.CLangTidyLocalInspection"
+            displayName="clang-tidy"
             groupName="C/C++"
             id="CLangTidyLocalInspection"
             level="WARNING"
@@ -37,17 +73,21 @@
     />
 
     <applicationConfigurable
-            instance="clangtidy.OptionTab"
+            instance="de.wieselbau.clion.clangtidy.OptionTab"
     />
   </extensions>
 
-  <extensions defaultExtensionNs="com.your.company.unique.plugin.id">
-    <ToolController implementation="clangtidy.tidy.tools.ModernizeLoopConvert" />
+  <extensions defaultExtensionNs="de.wieselbau.clion.clangtidy">
+    <ToolController implementation="de.wieselbau.clion.clangtidy.tidy.tools.ModernizeLoopConvert" />
   </extensions>
 
   <actions>
-    <action id="clangtidy.modernize.CLangModernizeAction" class="clangtidy.modernize.CLangModernizeAction" text="run CLang modernize">
-      <add-to-group group-id="RefactoringMenu" anchor="last"/>
+    <action
+            id="de.wieselbau.clion.clangtidy.actions.refactor.RefactorAction"
+            class="de.wieselbau.clion.clangtidy.actions.refactor.RefactorAction"
+            text="run clang-tidy"
+    >
+      <add-to-group group-id="RefactoringMenu" anchor="last" />
     </action>
   </actions>
 
