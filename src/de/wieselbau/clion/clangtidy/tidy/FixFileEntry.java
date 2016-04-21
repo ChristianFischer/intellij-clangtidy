@@ -33,9 +33,11 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.CharBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.BiConsumer;
 
 /**
  * This utility class stores all fixes, which belongs to a specific file
@@ -121,35 +123,102 @@ public class FixFileEntry {
 
 
 
+	private static boolean areSequencesEqual(CharSequence s1, CharSequence s2) {
+		int length1 = s1.length();
+		int length2 = s2.length();
+
+		if (length1 != length2) {
+			return false;
+		}
+
+		for(int i=0; i<length1; i++) {
+			if (s1.charAt(i) != s2.charAt(i)) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+
+	public void patch(@NotNull CharSequence content, @NotNull BiConsumer<TextRange,String> consumer) {
+		prepare();
+
+		int offset = 0;
+
+		for(Fix fix : fixes) {
+			int startOffset          = offset + fix.getTextRange().getStartOffset();
+			int endOffsetOriginal    = offset + fix.getTextRange().getEndOffset();
+			int endOffsetReplacement = offset + fix.getTextRange().getStartOffset() + fix.getReplacement().length();
+
+			if ((startOffset >= content.length()) || (endOffsetOriginal >= content.length())) {
+				throw new IndexOutOfBoundsException("Cannot apply fix " + fix.toString());
+			}
+
+			boolean hasOriginalContent = (
+					(endOffsetOriginal < content.length())
+				&&	(areSequencesEqual(CharBuffer.wrap(content, startOffset, endOffsetOriginal), fix.getOriginal()))
+			);
+
+			boolean hasReplacementContent = (
+					(endOffsetReplacement < content.length())
+				&&	(areSequencesEqual(CharBuffer.wrap(content, startOffset, endOffsetReplacement), fix.getReplacement()))
+			);
+
+			boolean canBeApplied = false;
+
+			if (startOffset < endOffsetOriginal && hasOriginalContent) {
+				canBeApplied = true;
+			}
+
+			if (startOffset < endOffsetReplacement && !hasReplacementContent) {
+				canBeApplied = true;
+			}
+
+			if (canBeApplied) {
+				consumer.accept(
+						TextRange.create(startOffset, endOffsetOriginal),
+						fix.getReplacement()
+				);
+
+				// check if change is within the content char sequence
+				assert areSequencesEqual(
+						CharBuffer.wrap(content, startOffset, endOffsetReplacement),
+						fix.getReplacement()
+				);
+			}
+
+			// offsets will have changed after applying other changes
+			offset -= fix.getTextRange().getLength();
+			offset += fix.getReplacement().length();
+		}
+	}
+
 
 	public String createPatchedContent() {
 		prepare();
 
 		Document document = FileDocumentManager.getInstance().getDocument(file);
-		StringBuilder content = null;
+		String result = null;
 
 		if (document != null) {
-			content = new StringBuilder(document.getText());
-			int offset = 0;
+			final StringBuilder content = new StringBuilder(document.getText());
 
-			for(Fix fix : fixes) {
-				content.replace(
-						offset + fix.getTextRange().getStartOffset(),
-						offset + fix.getTextRange().getEndOffset(),
-						fix.getReplacement()
-				);
+			patch(
+					content,
+					(TextRange range, String replacement) -> {
+						content.replace(
+								range.getStartOffset(),
+								range.getEndOffset(),
+								replacement
+						);
+					}
+			);
 
-				// offsets will have changed after applying other changes
-				offset -= fix.getTextRange().getLength();
-				offset += fix.getReplacement().length();
-			}
+			result = content.toString();
 		}
 
-		if (content != null) {
-			return content.toString();
-		}
-
-		return null;
+		return result;
 	}
 
 
@@ -166,24 +235,21 @@ public class FixFileEntry {
 				"clang-tidy",
 				null,
 				() -> {
-					int offset = 0;
-
 					Document document = FileDocumentManager.getInstance().getDocument(file);
 					if (document == null) {
 						return;
 					}
 
-					for(Fix fix : getFixes()) {
-						document.replaceString(
-								offset + fix.getTextRange().getStartOffset(),
-								offset + fix.getTextRange().getEndOffset(),
-								fix.getReplacement()
-						);
-
-						// offsets will have changed after applying other changes
-						offset -= fix.getTextRange().getLength();
-						offset += fix.getReplacement().length();
-					}
+					patch(
+							document.getCharsSequence(),
+							(TextRange range, String replacement) -> {
+								document.replaceString(
+										range.getStartOffset(),
+										range.getEndOffset(),
+										replacement
+								);
+							}
+					);
 				}
 		);
 
@@ -210,6 +276,7 @@ public class FixFileEntry {
 		try(InputStream in = file.getInputStream()) {
 			List<Integer> ignorableLineFeeds = new ArrayList<>();
 			List<Integer> lineOffsets        = new ArrayList<>();
+			StringBuilder content            = new StringBuilder();
 
 			{
 				int currentOffset = 0;
@@ -219,6 +286,7 @@ public class FixFileEntry {
 				lineOffsets.add(0);
 
 				while((b = in.read()) != -1) {
+					content.append((char)b);
 					++currentOffset;
 
 					if (b == '\n') {
@@ -245,6 +313,9 @@ public class FixFileEntry {
 						(int)(startOffset - startOffsetCorrection),
 						(int)(endOffset   - endOffsetCorrection)
 				));
+
+				fix.setOriginal(content.substring(startOffset, endOffset).replace("\r\n", "\n").replace('\r', '\n'));
+				assert(fix.getOriginal().length() == fix.getTextRange().getLength());
 
 				// try to assign issues to each fix
 				for(Issue issue : issues) {

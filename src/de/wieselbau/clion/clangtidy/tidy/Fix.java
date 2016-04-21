@@ -35,6 +35,7 @@ public class Fix {
 	private Issue		issue;
 	private VirtualFile file;
 	private TextRange	range;
+	private String		original;
 	private String		replacement;
 
 
@@ -68,6 +69,14 @@ public class Fix {
 
 	public TextRange getTextRange() {
 		return range;
+	}
+
+	public void setOriginal(String original) {
+		this.original = original;
+	}
+
+	public String getOriginal() {
+		return original;
 	}
 
 	public String getReplacement() {
