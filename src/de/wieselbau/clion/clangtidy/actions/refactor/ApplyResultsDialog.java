@@ -22,19 +22,28 @@
 
 package de.wieselbau.clion.clangtidy.actions.refactor;
 
-import com.intellij.diff.merge.MergeResult;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.DialogWrapper;
-import com.intellij.ui.CheckBoxList;
+import com.intellij.ui.CheckboxTree;
+import com.intellij.ui.ColoredTreeCellRenderer;
+import com.intellij.ui.SimpleTextAttributes;
+import com.intellij.ui.treeStructure.Tree;
+import com.intellij.util.PlatformIcons;
 import de.wieselbau.clion.clangtidy.NotificationFactory;
 import de.wieselbau.clion.clangtidy.tidy.ApplyFixesBackgroundTask;
 import de.wieselbau.clion.clangtidy.tidy.FixFileEntry;
 import de.wieselbau.clion.clangtidy.tidy.FixProjectHelper;
+import de.wieselbau.util.filestree.FileNode;
+import de.wieselbau.util.filestree.FilesTreeCellRenderer;
+import de.wieselbau.util.filestree.FilesTreeModel;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
-import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.TreeSelectionEvent;
+import javax.swing.tree.TreeSelectionModel;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * This dialog presents a list of all fixable files found by clang-tidy.
@@ -44,10 +53,44 @@ public class ApplyResultsDialog extends DialogWrapper {
 	private JPanel root;
 	private JButton btMergeSelected;
 	private JButton btApplySelected;
-	private CheckBoxList<FixFileEntry> listMergeableFiles;
+	private Tree listMergeableFiles;
 
 	private Project				project;
 	private FixProjectHelper	helper;
+
+
+	private static class FixFileEntryNode extends FileNode {
+		private FixFileEntry entry;
+
+		public FixFileEntryNode(@NotNull FixFileEntry entry) {
+			super(entry.getFile());
+			this.entry = entry;
+		}
+
+		public FixFileEntry getEntry() {
+			return entry;
+		}
+
+		@Override
+		public void setChecked(boolean checked) {
+			entry.setSelected(checked);
+		}
+
+		@Override
+		public boolean isChecked() {
+			return entry.isSelected();
+		}
+
+		@Override
+		public void customizeRenderer(ColoredTreeCellRenderer renderer, boolean selected, boolean expanded, boolean hasFocus) {
+			super.customizeRenderer(renderer, selected, expanded, hasFocus);
+
+			renderer.append(
+					" (" + String.valueOf(getEntry().getFixes().size()) + " Changes)",
+					SimpleTextAttributes.GRAY_ITALIC_ATTRIBUTES
+			);
+		}
+	}
 
 
 	public ApplyResultsDialog(@NotNull Project project, @NotNull FixProjectHelper helper) {
@@ -68,32 +111,65 @@ public class ApplyResultsDialog extends DialogWrapper {
 
 
 	private void createUIComponents() {
-		listMergeableFiles = new CheckBoxList<>();
-		listMergeableFiles.addListSelectionListener(this::onListSelectionChanged);
-		listMergeableFiles.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-		listMergeableFiles.setCheckBoxListListener((int index, boolean value) -> {
-			FixFileEntry perFile = listMergeableFiles.getItemAt(index);
-			if (perFile != null) {
-				perFile.setSelected(value);
-			}
-		});
-
+		listMergeableFiles = new CheckboxTree();
+		listMergeableFiles.addTreeSelectionListener(this::onListSelectionChanged);
+		listMergeableFiles.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
 	}
 
 
 	private void initContent() {
-		for(FixFileEntry entry : helper.getFixes()) {
-			StringBuilder description = new StringBuilder();
-			description.append(entry.getFile().getPath());
-			description.append(' ').append('(');
-			description.append(entry.getFixes().size()).append(' ').append("Changes");
-			description.append(')');
+		FilesTreeModel model = new FilesTreeModel();
 
-			listMergeableFiles.addItem(
-					entry,
-					description.toString(),
-					entry.isSelected()
-			);
+		// add project files
+		{
+			List<FixFileEntry> projectEntries = helper
+					.getFixes().stream()
+					.filter(entry -> entry.getScope() != FixFileEntry.Scope.External)
+					.collect(Collectors.toList())
+			;
+
+			if (!projectEntries.isEmpty()) {
+				model.addFiles(
+						projectEntries,
+						FixFileEntryNode::new,
+						model.createModule(PlatformIcons.PROJECT_ICON, project.getName())
+				);
+			}
+		}
+
+		// add external files
+		{
+			List<FixFileEntry> externalEntries = helper
+					.getFixes().stream()
+					.filter(entry -> entry.getScope() == FixFileEntry.Scope.External)
+					.collect(Collectors.toList())
+			;
+
+			if (!externalEntries.isEmpty()) {
+				model.addFiles(
+						externalEntries,
+						FixFileEntryNode::new,
+						model.createModule(PlatformIcons.LIBRARY_ICON, "External files")
+				);
+			}
+		}
+
+		model.flatten();
+
+		listMergeableFiles.setModel(model);
+		listMergeableFiles.setRootVisible(false);
+
+		listMergeableFiles.setCellRenderer(new CheckboxTree.CheckboxTreeCellRenderer(true, true) {
+				@Override
+				public void customizeRenderer(JTree tree, Object value, boolean selected, boolean expanded, boolean leaf, int row, boolean hasFocus) {
+					super.customizeRenderer(tree, value, selected, expanded, leaf, row, hasFocus);
+					FilesTreeCellRenderer.defaultCustomizeFilesTreeCellRenderer(tree, getTextRenderer(), value, selected, expanded, leaf, row, hasFocus);
+				}
+		});
+
+		// expand all nodes of the tree
+		for(int i=0; i<listMergeableFiles.getRowCount(); i++) {
+			listMergeableFiles.expandRow(i);
 		}
 	}
 
@@ -116,46 +192,25 @@ public class ApplyResultsDialog extends DialogWrapper {
 
 
 	protected void onButtonMergeSelected() {
-		final int index = listMergeableFiles.getSelectedIndex();
-		assert index > -1;
+		final FixFileEntry entry = getCurrentlySelectedFixEntry();
+		assert entry != null;
 
-		if (index != -1) {
-			final FixFileEntry entry = listMergeableFiles.getItemAt(index);
-			assert entry != null;
-
-			MergeFixesHelper.merge(helper, entry, result -> {
-				if (result == MergeResult.RESOLVED) {
-					entry.setResult(FixFileEntry.Result.Successful);
-					removeListItem(index);
-				}
-			});
+		if (entry != null) {
+			MergeFixesHelper.merge(helper, entry, null);
 		}
 	}
 
 
 	protected void onButtonApplySelected() {
-		int index = listMergeableFiles.getSelectedIndex();
-		assert index > -1;
+		FixFileEntry entry = getCurrentlySelectedFixEntry();
+		assert entry != null;
 
-		if (index != -1) {
-			FixFileEntry entry = listMergeableFiles.getItemAt(index);
-			assert entry != null;
-
+		if (entry != null) {
 			FixFileEntry.Result result = entry.apply(project);
 
 			switch (result) {
-				case Successful: {
-					removeListItem(index);
-					break;
-				}
-
 				case Failed: {
 					NotificationFactory.notifyScanFailedOnFile(helper.getProject(), entry.getFile());
-					break;
-				}
-
-				case Skipped: {
-					removeListItem(index);
 					break;
 				}
 			}
@@ -163,14 +218,21 @@ public class ApplyResultsDialog extends DialogWrapper {
 	}
 
 
-	protected void onListSelectionChanged(ListSelectionEvent e) {
-		boolean hasSelection = listMergeableFiles.getSelectedValue() != null;
+	protected void onListSelectionChanged(TreeSelectionEvent e) {
+		boolean hasSelection = getCurrentlySelectedFixEntry() != null;
 		btMergeSelected.setEnabled(hasSelection);
 		btApplySelected.setEnabled(hasSelection);
 	}
 
 
-	protected void removeListItem(int index) {
-		((DefaultListModel)listMergeableFiles.getModel()).remove(index);
+	private FixFileEntry getCurrentlySelectedFixEntry() {
+		FixFileEntryNode[] nodes = listMergeableFiles.getSelectedNodes(FixFileEntryNode.class, null);
+		if (nodes.length > 0) {
+			assert nodes.length == 1;
+
+			return nodes[0].getEntry();
+		}
+
+		return null;
 	}
 }
