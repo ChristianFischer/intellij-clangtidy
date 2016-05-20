@@ -22,8 +22,10 @@
 
 package de.wieselbau.clion.clangtidy.actions.refactor;
 
+import com.intellij.ide.presentation.VirtualFilePresentation;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.DialogWrapper;
+import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.ui.CheckboxTree;
 import com.intellij.ui.ColoredTreeCellRenderer;
 import com.intellij.ui.SimpleTextAttributes;
@@ -61,6 +63,8 @@ public class ApplyResultsDialog extends DialogWrapper {
 	private Project				project;
 	private FixProjectHelper	helper;
 
+	private FilesTreeModel		listMergeableFilesModel;
+
 
 	private static class FixFileEntryNode extends FileNode {
 		private FixFileEntry entry;
@@ -86,12 +90,33 @@ public class ApplyResultsDialog extends DialogWrapper {
 
 		@Override
 		public void customizeRenderer(ColoredTreeCellRenderer renderer, boolean selected, boolean expanded, boolean hasFocus) {
-			super.customizeRenderer(renderer, selected, expanded, hasFocus);
+			FixFileEntry.Result result = getEntry().getResult();
 
-			renderer.append(
-					" (" + String.valueOf(getEntry().getFixes().size()) + " Changes)",
-					SimpleTextAttributes.GRAY_ITALIC_ATTRIBUTES
-			);
+			if (result != null) {
+				VirtualFile file = getEntry().getFile();
+				renderer.setIcon(VirtualFilePresentation.getIcon(file));
+
+				switch (result) {
+					case Successful: {
+						renderer.append(file.getName(), SimpleTextAttributes.GRAYED_ITALIC_ATTRIBUTES);
+						renderer.append(" (done)", SimpleTextAttributes.GRAYED_ITALIC_ATTRIBUTES);
+						break;
+					}
+
+					case Failed: {
+						renderer.append(file.getName(), SimpleTextAttributes.ERROR_ATTRIBUTES);
+						break;
+					}
+				}
+			}
+			else {
+				super.customizeRenderer(renderer, selected, expanded, hasFocus);
+
+				renderer.append(
+						" (" + String.valueOf(getEntry().getFixes().size()) + " Changes)",
+						SimpleTextAttributes.GRAY_ITALIC_ATTRIBUTES
+				);
+			}
 		}
 	}
 
@@ -121,7 +146,7 @@ public class ApplyResultsDialog extends DialogWrapper {
 
 
 	private void initContent() {
-		FilesTreeModel model = new FilesTreeModel();
+		listMergeableFilesModel = new FilesTreeModel();
 
 		// add project files
 		{
@@ -132,10 +157,10 @@ public class ApplyResultsDialog extends DialogWrapper {
 			;
 
 			if (!projectEntries.isEmpty()) {
-				model.addFiles(
+				listMergeableFilesModel.addFiles(
 						projectEntries,
 						FixFileEntryNode::new,
-						model.createModule(PlatformIcons.PROJECT_ICON, project.getName())
+						listMergeableFilesModel.createModule(PlatformIcons.PROJECT_ICON, project.getName())
 				);
 			}
 		}
@@ -149,17 +174,17 @@ public class ApplyResultsDialog extends DialogWrapper {
 			;
 
 			if (!externalEntries.isEmpty()) {
-				model.addFiles(
+				listMergeableFilesModel.addFiles(
 						externalEntries,
 						FixFileEntryNode::new,
-						model.createModule(PlatformIcons.LIBRARY_ICON, "External files")
+						listMergeableFilesModel.createModule(PlatformIcons.LIBRARY_ICON, "External files")
 				);
 			}
 		}
 
-		model.flatten();
+		listMergeableFilesModel.flatten();
 
-		listMergeableFiles.setModel(model);
+		listMergeableFiles.setModel(listMergeableFilesModel);
 		listMergeableFiles.setRootVisible(false);
 
 		listMergeableFiles.setCellRenderer(new CheckboxTree.CheckboxTreeCellRenderer(true, true) {
@@ -228,6 +253,21 @@ public class ApplyResultsDialog extends DialogWrapper {
 
 	private void onEntryResultChanged(@NotNull FixFileEntry entry, @Nullable FixFileEntry.Result result) {
 		if (result != null) {
+			entry.setSelected(false);
+
+			// notify the tree about changed nodes
+			{
+				TreeNode node = listMergeableFilesModel.findNode(
+						FixFileEntryNode.class,
+						(FixFileEntryNode n) -> entry == n.getEntry()
+				);
+
+				while (node != null) {
+					listMergeableFilesModel.nodeChanged(node);
+					node = node.getParent();
+				}
+			}
+
 			switch (result) {
 				case Failed: {
 					NotificationFactory.notifyScanFailedOnFile(helper.getProject(), entry.getFile());

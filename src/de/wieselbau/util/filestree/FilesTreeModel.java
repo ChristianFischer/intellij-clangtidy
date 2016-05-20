@@ -24,11 +24,15 @@ package de.wieselbau.util.filestree;
 
 import com.intellij.openapi.vfs.VirtualFile;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
 import javax.swing.tree.DefaultTreeModel;
+import java.util.Enumeration;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 
 /**
@@ -114,5 +118,90 @@ public class FilesTreeModel extends DefaultTreeModel {
 	 */
 	public void flatten() {
 		ROOT.flatten();
+	}
+
+
+	/**
+	 * Find a {@link FileNode} by the file assigned to it.
+	 * If there are more than one node matching the given file, the first found will be returned.
+	 * @param file	A file to be searched in this tree model.
+	 * @return		The first node matching the given file, or {@code null}, if no node found.
+	 */
+	public @Nullable FileNode findNodeForFile(@NotNull VirtualFile file) {
+		return findNodeInSubtree(
+				FileNode.class,
+				ROOT,
+				(FileNode node) -> Objects.equals(file, node.getFile())
+		);
+	}
+
+
+	/**
+	 * Find a {@link FilesTreeNode} by the user object assigned to it.
+	 * If there are more than one node matching the given object, the first found will be returned.
+	 * @param object	An user object to be searched in this tree model.
+	 * @return			The first node matching the given object, or {@code null}, if no node found.
+	 */
+	public <T> FilesTreeNode findNodeForUserObject(@NotNull T object) {
+		return findNodeInSubtree(
+				FilesTreeNode.class,
+				ROOT,
+				(FilesTreeNode node) -> Objects.equals(object, node.getUserObject())
+		);
+	}
+
+
+	/**
+	 * Find a {@link FilesTreeNode} by a custom condition.
+	 * If there are more than one node matching the given object, the first found will be returned.
+	 * @param cls		A class object describing the class of the node to be found.
+	 * @param predicate	A predicate which implements the condition for the node to be found.
+	 * @return			The first node matching the given predicate and class type, or {@code null}, if no node found.
+	 */
+	public <T extends FilesTreeNode> T findNode(
+			@NotNull Class<T> cls,
+			@NotNull Predicate<T> predicate
+	) {
+		return findNodeInSubtree(cls, ROOT, predicate);
+	}
+
+
+	/**
+	 * Find a {@link FilesTreeNode} by a custom condition.
+	 * If there are more than one node matching the given object, the first found will be returned.
+	 * @param cls		A class object describing the class of the node to be found.
+	 * @param parent	A tree node where to start searching.
+	 * @param predicate	A predicate which implements the condition for the node to be found.
+	 * @return			The first node matching the given predicate and class type, or {@code null}, if no node found.
+	 */
+	public <T extends FilesTreeNode> T findNodeInSubtree(
+			@NotNull Class<T> cls,
+			@NotNull FilesTreeNode parent,
+			@NotNull Predicate<T> predicate
+	) {
+		Enumeration enumeration = parent.children();
+
+		while(enumeration.hasMoreElements()) {
+			Object o = enumeration.nextElement();
+			if (o instanceof FilesTreeNode) {
+				FilesTreeNode node = (FilesTreeNode)o;
+
+				if (cls.isInstance(node)) {
+					@SuppressWarnings("unchecked")
+					T typedNode = (T) node;
+
+					if (predicate.test(typedNode)) {
+						return typedNode;
+					}
+				}
+
+				T result = findNodeInSubtree(cls, node, predicate);
+				if (result != null) {
+					return result;
+				}
+			}
+		}
+
+		return null;
 	}
 }
