@@ -26,6 +26,8 @@ import com.intellij.ui.CheckedTreeNode;
 import com.intellij.ui.ColoredTreeCellRenderer;
 
 import javax.swing.tree.TreeNode;
+import java.util.Collections;
+import java.util.Objects;
 
 /**
  * Base class for any tree node within a {@link FilesTreeModel}.
@@ -33,6 +35,14 @@ import javax.swing.tree.TreeNode;
 public class FilesTreeNode extends CheckedTreeNode {
 	public FilesTreeNode(Object userObject) {
 		super(userObject);
+	}
+
+
+	/**
+	 * Get the name of this node, which will be displayed in the UI.
+	 */
+	public String getDisplayName() {
+		return Objects.toString(getUserObject());
 	}
 
 
@@ -49,6 +59,67 @@ public class FilesTreeNode extends CheckedTreeNode {
 				filesTreeNode.flatten();
 			}
 		}
+	}
+
+
+	/**
+	 * Sort this node's children based on their display name and order priority.
+	 * @see FilesTreeNode#getDisplayName()
+	 * @see FilesTreeNode#getSortPriority()
+	 */
+	public void sortChildren() {
+		if (children != null) {
+			Collections.sort(
+					children,
+					(Object a, Object b) -> {
+						if (a instanceof FilesTreeNode && b instanceof FilesTreeNode) {
+							FilesTreeNode aNode = (FilesTreeNode)a;
+							FilesTreeNode bNode = (FilesTreeNode)b;
+
+							int aPriority = aNode.getSortPriority();
+							int bPriority = bNode.getSortPriority();
+
+							if (aPriority == bPriority) {
+								String aName = aNode.getDisplayName();
+								String bName = bNode.getDisplayName();
+
+								return aName.compareToIgnoreCase(bName);
+							}
+
+							return aPriority - bPriority;
+						}
+
+						return 0;
+					}
+			);
+		}
+	}
+
+
+	/**
+	 * Sort all children under this node by their display name and order priority.
+	 * @see FilesTreeNode#sortChildren()
+	 */
+	public void sortChildrenRecursive() {
+		sortChildren();
+
+		for(int i=getChildCount(); --i>=0;) {
+			TreeNode node = getChildAt(i);
+
+			if (node instanceof FilesTreeNode) {
+				FilesTreeNode filesTreeNode = (FilesTreeNode)node;
+				filesTreeNode.sortChildrenRecursive();
+			}
+		}
+	}
+
+
+	/**
+	 * Get a priority value for changing the sort order of nodes.
+	 * Lower values will be inserted before higher values.
+	 */
+	public int getSortPriority() {
+		return 0;
 	}
 
 

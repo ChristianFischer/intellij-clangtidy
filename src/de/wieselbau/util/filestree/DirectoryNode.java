@@ -87,6 +87,18 @@ public class DirectoryNode extends FilesTreeNode {
 
 
 	@Override
+	public String getDisplayName() {
+		return getPathSegmentName();
+	}
+
+
+	@Override
+	public int getSortPriority() {
+		return -1;
+	}
+
+
+	@Override
 	public void flatten() {
 		DirectoryNode parentNode = getParentDirectoryNode();
 

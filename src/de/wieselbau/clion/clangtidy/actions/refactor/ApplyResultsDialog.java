@@ -38,6 +38,7 @@ import de.wieselbau.clion.clangtidy.tidy.FixProjectHelper;
 import de.wieselbau.util.filestree.FileNode;
 import de.wieselbau.util.filestree.FilesTreeCellRenderer;
 import de.wieselbau.util.filestree.FilesTreeModel;
+import de.wieselbau.util.filestree.ModuleNode;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -157,11 +158,15 @@ public class ApplyResultsDialog extends DialogWrapper {
 			;
 
 			if (!projectEntries.isEmpty()) {
+				ModuleNode module = listMergeableFilesModel.createModule(PlatformIcons.PROJECT_ICON, project.getName());
+
 				listMergeableFilesModel.addFiles(
 						projectEntries,
 						FixFileEntryNode::new,
-						listMergeableFilesModel.createModule(PlatformIcons.PROJECT_ICON, project.getName())
+						module
 				);
+
+				module.sortChildrenRecursive();
 			}
 		}
 
@@ -174,11 +179,15 @@ public class ApplyResultsDialog extends DialogWrapper {
 			;
 
 			if (!externalEntries.isEmpty()) {
+				ModuleNode module = listMergeableFilesModel.createModule(PlatformIcons.LIBRARY_ICON, "External files");
+
 				listMergeableFilesModel.addFiles(
 						externalEntries,
 						FixFileEntryNode::new,
-						listMergeableFilesModel.createModule(PlatformIcons.LIBRARY_ICON, "External files")
+						module
 				);
+
+				module.sortChildrenRecursive();
 			}
 		}
 

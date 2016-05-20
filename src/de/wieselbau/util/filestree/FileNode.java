@@ -47,6 +47,12 @@ public class FileNode extends FilesTreeNode {
 
 
 	@Override
+	public String getDisplayName() {
+		return file.getName();
+	}
+
+
+	@Override
 	public void customizeRenderer(ColoredTreeCellRenderer renderer, boolean selected, boolean expanded, boolean hasFocus) {
 		renderer.setIcon(VirtualFilePresentation.getIcon(file));
 		renderer.append(file.getName(), SimpleTextAttributes.REGULAR_ATTRIBUTES);

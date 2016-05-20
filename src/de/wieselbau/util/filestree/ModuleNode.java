@@ -51,6 +51,12 @@ public class ModuleNode extends FilesTreeNode {
 	}
 
 
+	@Override
+	public String getDisplayName() {
+		return name;
+	}
+
+
 	/**
 	 * Creates a new {@link DirectoryNode} for a given directory or returns an existing one.
 	 * Multiple calls for the same directory should always return the same object.
