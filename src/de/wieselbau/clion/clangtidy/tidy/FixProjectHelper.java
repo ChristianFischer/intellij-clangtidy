@@ -29,6 +29,7 @@ import com.intellij.openapi.vfs.VirtualFile;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 
 /**
@@ -120,6 +121,11 @@ public class FixProjectHelper {
 	}
 
 
+	public List<FixFileEntry> getFixesSelected() {
+		return fixes.stream().filter(FixFileEntry::isSelected).collect(Collectors.toList());
+	}
+
+
 	public int countFilesToBeApplied() {
 		int count = 0;
 
@@ -136,33 +142,5 @@ public class FixProjectHelper {
 		}
 
 		return count;
-	}
-
-
-	public void applyAllSelected() {
-		for(FixFileEntry entry : fixes) {
-			applyIfSelected(entry);
-		}
-	}
-
-
-	public FixFileEntry.Result applyIfSelected(@NotNull FixFileEntry file) {
-		FixFileEntry.Result result = applyIfSelectedInternal(file);
-		logger.debug("apply '" + file + "' => " + result);
-		return result;
-	}
-
-
-	private FixFileEntry.Result applyIfSelectedInternal(@NotNull FixFileEntry file) {
-		if (file.isSelected()) {
-			return file.apply(project);
-		}
-
-		// if no other result given, the result is 'skipped'
-		if (file.getResult() == null) {
-			file.setResult(FixFileEntry.Result.Skipped);
-		}
-
-		return FixFileEntry.Result.Skipped;
 	}
 }

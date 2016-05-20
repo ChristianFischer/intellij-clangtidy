@@ -41,7 +41,10 @@ import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
 import javax.swing.event.TreeSelectionEvent;
+import javax.swing.tree.TreeNode;
 import javax.swing.tree.TreeSelectionModel;
+import java.awt.*;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -113,7 +116,7 @@ public class ApplyResultsDialog extends DialogWrapper {
 	private void createUIComponents() {
 		listMergeableFiles = new CheckboxTree();
 		listMergeableFiles.addTreeSelectionListener(this::onListSelectionChanged);
-		listMergeableFiles.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
+		listMergeableFiles.getSelectionModel().setSelectionMode(TreeSelectionModel.DISCONTIGUOUS_TREE_SELECTION);
 	}
 
 
@@ -186,28 +189,45 @@ public class ApplyResultsDialog extends DialogWrapper {
 		super.doOKAction();
 
 		if (helper.countFilesToBeApplied() > 0) {
-			ApplyFixesBackgroundTask.start(helper);
+			ApplyFixesBackgroundTask.start(project, helper.getFixesSelected());
 		}
 	}
 
 
 	protected void onButtonMergeSelected() {
-		final FixFileEntry entry = getCurrentlySelectedFixEntry();
-		assert entry != null;
-
-		if (entry != null) {
-			MergeFixesHelper.merge(helper, entry, null);
-		}
+		List<FixFileEntry> entries = getSelectedEntries();
+		MergeFixesHelper.merge(helper, entries);
 	}
 
 
 	protected void onButtonApplySelected() {
-		FixFileEntry entry = getCurrentlySelectedFixEntry();
-		assert entry != null;
+		List<FixFileEntry> entries = getSelectedEntries();
 
-		if (entry != null) {
+		/*
+		if (entries.size() == 1) {
+			FixFileEntry entry = entries.get(0);
 			FixFileEntry.Result result = entry.apply(project);
+			onEntryResultChanged(entry, result);
+		}
+		else {
+		*/
+			ApplyFixesBackgroundTask.start(
+					project,
+					entries,
+					(@NotNull FixFileEntry entry, FixFileEntry.Result result) -> {
+						EventQueue.invokeLater(() -> {
+							onEntryResultChanged(entry, result);
+						});
+					}
+			);
+		/*
+		}
+		*/
+	}
 
+
+	private void onEntryResultChanged(@NotNull FixFileEntry entry, @Nullable FixFileEntry.Result result) {
+		if (result != null) {
 			switch (result) {
 				case Failed: {
 					NotificationFactory.notifyScanFailedOnFile(helper.getProject(), entry.getFile());
@@ -219,20 +239,38 @@ public class ApplyResultsDialog extends DialogWrapper {
 
 
 	protected void onListSelectionChanged(TreeSelectionEvent e) {
-		boolean hasSelection = getCurrentlySelectedFixEntry() != null;
+		boolean hasSelection = listMergeableFiles.getSelectionCount() != 0;
 		btMergeSelected.setEnabled(hasSelection);
 		btApplySelected.setEnabled(hasSelection);
 	}
 
 
-	private FixFileEntry getCurrentlySelectedFixEntry() {
-		FixFileEntryNode[] nodes = listMergeableFiles.getSelectedNodes(FixFileEntryNode.class, null);
-		if (nodes.length > 0) {
-			assert nodes.length == 1;
+	/**
+	 * Get a list of all selected entries.
+	 * If a module or directory node is selected, all files under this node will be included.
+	 */
+	private @NotNull List<FixFileEntry> getSelectedEntries() {
+		List<FixFileEntry> files = new ArrayList<>();
 
-			return nodes[0].getEntry();
+		for(TreeNode node : listMergeableFiles.getSelectedNodes(TreeNode.class, null)) {
+			collectFilesFromNode(node, files);
 		}
 
-		return null;
+		return files;
+	}
+
+
+	private void collectFilesFromNode(final @NotNull TreeNode node, @NotNull List<FixFileEntry> list) {
+		if (node instanceof FixFileEntryNode) {
+			FixFileEntry entry = ((FixFileEntryNode)node).getEntry();
+
+			if (!list.contains(entry)) {
+				list.add(entry);
+			}
+		}
+
+		for(int i=node.getChildCount(); --i>=0;) {
+			collectFilesFromNode(node.getChildAt(i), list);
+		}
 	}
 }

@@ -189,16 +189,4 @@ public class RefactorHelper {
 		ApplyResultsDialog dialog = new ApplyResultsDialog(project, helper);
 		dialog.show();
 	}
-
-
-	private void onStartFixingIssues(ScannerResult result) {
-		ApplyFixesBackgroundTask.start(project, sourceFiles, result);
-	}
-
-
-	private void onStartFixingIssues(@NotNull FixProjectHelper helper) {
-		ApplyFixesBackgroundTask.start(helper);
-	}
-
-
 }

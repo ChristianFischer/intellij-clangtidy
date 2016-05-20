@@ -30,6 +30,7 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.TextRange;
 import com.intellij.openapi.vfs.VirtualFile;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -54,7 +55,6 @@ public class FixFileEntry {
 	public enum Result {
 		Successful,
 		Failed,
-		Skipped,
 	}
 
 	private VirtualFile		file;
@@ -195,37 +195,38 @@ public class FixFileEntry {
 	}
 
 
-	public String createPatchedContent() {
+	public String createPatchedContent(@NotNull CharSequence original) {
 		prepare();
 
-		Document document = FileDocumentManager.getInstance().getDocument(file);
-		String result = null;
+		final StringBuilder content = new StringBuilder(original);
 
-		if (document != null) {
-			final StringBuilder content = new StringBuilder(document.getText());
+		patch(
+				content,
+				(TextRange range, String replacement) -> {
+					content.replace(
+							range.getStartOffset(),
+							range.getEndOffset(),
+							replacement
+					);
+				}
+		);
 
-			patch(
-					content,
-					(TextRange range, String replacement) -> {
-						content.replace(
-								range.getStartOffset(),
-								range.getEndOffset(),
-								replacement
-						);
-					}
-			);
-
-			result = content.toString();
-		}
-
-		return result;
+		return content.toString();
 	}
 
 
-
-	public Result apply(@NotNull Project project) {
+	/**
+	 * Applies this entries fixes to it's file.
+	 * When everything was Ok, the function will return {@link Result#Successful}. The new result will be stored
+	 * within the entry.
+	 * If the entry already has a result assigned, it will be skipped and apply will return {@code null}.
+	 * @param project    The current project.
+	 * @return {@link Result#Successful} when applied all changes successfully.
+	 *         {@code null} if this entry was skipped.
+	 */
+	public @Nullable Result apply(@NotNull Project project) {
 		if (getResult() != null) {
-			return Result.Skipped;
+			return null;
 		}
 
 		prepare();

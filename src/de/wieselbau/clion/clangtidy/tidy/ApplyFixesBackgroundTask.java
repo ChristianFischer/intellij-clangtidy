@@ -27,7 +27,9 @@ import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.Project;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -36,35 +38,34 @@ import java.util.List;
 public class ApplyFixesBackgroundTask extends Task.Modal {
 	public final static String TITLE	= "clang-tidy: applying fixes";
 
+	/**
+	 * Provides a notification when a specific entry was applied
+	 */
+	public interface OnAppliedCallback {
+		void onApplied(@NotNull FixFileEntry entry, @Nullable FixFileEntry.Result result);
+	}
+
 	private Project				project;
-	private SourceFileSelection	sourceFileSelection;
-	private ScannerResult		scannerResult;
-	private FixProjectHelper	helper;
+	private List<FixFileEntry>	entriesToApply;
+	private OnAppliedCallback	onAppliedCallback;
 
 
 
-	public static void start(@NotNull Project project, @NotNull SourceFileSelection selection, @NotNull ScannerResult scannerResult) {
-		ProgressManager.getInstance().run(new ApplyFixesBackgroundTask(project, selection, scannerResult));
+	public static void start(@NotNull Project project, @NotNull List<FixFileEntry> entriesToApply) {
+		ProgressManager.getInstance().run(new ApplyFixesBackgroundTask(project, entriesToApply, null));
 	}
 
 
-	public static void start(@NotNull FixProjectHelper helper) {
-		ProgressManager.getInstance().run(new ApplyFixesBackgroundTask(helper));
+	public static void start(@NotNull Project project, @NotNull List<FixFileEntry> entriesToApply, @Nullable OnAppliedCallback callback) {
+		ProgressManager.getInstance().run(new ApplyFixesBackgroundTask(project, entriesToApply, callback));
 	}
 
 
-	public ApplyFixesBackgroundTask(@NotNull Project project, @NotNull SourceFileSelection selection, @NotNull ScannerResult scannerResult) {
+	public ApplyFixesBackgroundTask(@NotNull Project project, @NotNull List<FixFileEntry> entriesToApply, @Nullable OnAppliedCallback callback) {
 		super(project, TITLE, false);
 		this.project				= project;
-		this.sourceFileSelection	= selection;
-		this.scannerResult			= scannerResult;
-	}
-
-
-	public ApplyFixesBackgroundTask(@NotNull FixProjectHelper helper) {
-		super(helper.getProject(), TITLE, false);
-		this.project		= helper.getProject();
-		this.helper			= helper;
+		this.entriesToApply			= Collections.unmodifiableList(entriesToApply);
+		this.onAppliedCallback		= callback;
 	}
 
 
@@ -73,22 +74,35 @@ public class ApplyFixesBackgroundTask extends Task.Modal {
 		indicator.setFraction(0.0);
 		indicator.setText("preparing");
 
-		if (helper == null) {
-			helper = FixProjectHelper.create(project, sourceFileSelection, scannerResult);
-		}
-
-		final List<FixFileEntry> entries = helper.getFixes();
-		int filesTotal   = entries.size();
+		int filesTotal   = entriesToApply.size();
 		int filesApplied = 0;
 
-		for(FixFileEntry entry : entries) {
+		for(FixFileEntry entry : entriesToApply) {
 			indicator.setText(entry.getFile().getPath());
-			helper.applyIfSelected(entry);
+			FixFileEntry.Result result = entry.apply(project);
 			++filesApplied;
+
+			if (onAppliedCallback != null) {
+				onAppliedCallback.onApplied(entry, result);
+			}
+
+			try {
+				Thread.sleep(10);
+			}
+			catch (InterruptedException e) {
+				e.printStackTrace();
+			}
 
 			indicator.setFraction(1.0 * filesApplied / filesTotal);
 		}
 
 		indicator.setText("Done");
+
+		try {
+			Thread.sleep(1000);
+		}
+		catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 	}
 }
