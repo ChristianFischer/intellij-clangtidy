@@ -2,6 +2,8 @@
 
 This plugin provides an user interface within CLion to easily use clang-tidy
 on your project's sources.
+Results will be displayed within an intuitive UI which allows to select
+and apply single changes to your project.
 
 ### What is clang-tidy ###
 
