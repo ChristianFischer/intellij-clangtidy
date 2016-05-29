@@ -71,16 +71,24 @@ public class DirectoryNode extends FilesTreeNode {
 		VirtualFile currentDirectory = getDirectory();
 		String pathSegment = null;
 
-		while(currentDirectory != null && !Objects.equals(currentDirectory, parentDirectory)) {
+		do {
+			String currentDirectoryName = currentDirectory.getName();
+
 			if (pathSegment == null) {
-				pathSegment = currentDirectory.getName();
+				pathSegment = currentDirectoryName;
 			}
 			else {
-				pathSegment = currentDirectory.getName() + File.separator + pathSegment;
+				// append path separator except for unix root directory
+				if (!currentDirectoryName.equals(File.separator)) {
+					currentDirectoryName += File.separator;
+				}
+
+				pathSegment = currentDirectoryName + pathSegment;
 			}
 
 			currentDirectory = currentDirectory.getParent();
 		}
+		while(currentDirectory != null && !Objects.equals(currentDirectory, parentDirectory));
 
 		return pathSegment;
 	}
