@@ -27,7 +27,9 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.DialogWrapper;
 import com.intellij.openapi.ui.ValidationInfo;
 import com.intellij.ui.CheckboxTree;
+import com.intellij.ui.TreeSpeedSearch;
 import com.intellij.ui.table.JBTable;
+import com.intellij.util.ui.tree.TreeUtil;
 import de.wieselbau.clion.clangtidy.Options;
 import de.wieselbau.clion.clangtidy.tidy.ToolCollection;
 import de.wieselbau.clion.clangtidy.tidy.ToolController;
@@ -62,9 +64,10 @@ public class RefactorConfigurationDialog extends DialogWrapper {
 	private JEditorPane txtDocumentationLink;
 
 	private ListToolsTreeDataModel<ToolController> listToolsModel;
+	private TreeSpeedSearch listToolsSpeedSearch;
 
 	private ToolController			currentTool;
-	private PropertiesTableModel currentToolProperties;
+	private PropertiesTableModel	currentToolProperties;
 
 	private ToolController[]		selectedTools;
 
@@ -88,9 +91,19 @@ public class RefactorConfigurationDialog extends DialogWrapper {
 		listTools.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
 		listTools.addTreeSelectionListener(this::onToolSelected);
 
+		listToolsSpeedSearch = new TreeSpeedSearch(
+				listTools,
+				ListToolsTreeDataModel::EntryToString
+		);
+
+		TreeUtil.installActions(listTools);
+
 		tToolProperties = new PropertiesTable();
 		tToolProperties.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 		tToolProperties.getSelectionModel().addListSelectionListener(this::onToolPropertySelected);
+
+		// customize the empty text to give users a hint to select a check on the left side
+		tToolProperties.getEmptyText().setText("Select any check on the left side to view it's properties.");
 	}
 
 

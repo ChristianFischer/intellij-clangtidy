@@ -244,6 +244,30 @@ public class ListToolsTreeDataModel<T> implements TreeModel {
 	}
 
 
+	/**
+	 * Utility function to get the string value of an entry.
+	 * @param entry	An object. If this object is an instance of {@link Entry} it returns its string value.
+	 * @return	if entry was a valid entry, returns its string value, otherwise {@code null}.
+	 */
+	public static String EntryToString(@NotNull Object entry) {
+		if (entry instanceof Entry) {
+			return EntryToString((Entry)entry);
+		}
+
+		return null;
+	}
+
+
+	/**
+	 * Utility function to get the string value of an entry.
+	 * @param entry	An entry which string value should be returned.
+	 * @return		The string value of the given entry.
+	 */
+	public static String EntryToString(@NotNull Entry entry) {
+		return entry.getName();
+	}
+
+
 	private Entry<T>			root		= new Entry<>("");
 	private List<Entry<T>>		entries		= new ArrayList<>();
 

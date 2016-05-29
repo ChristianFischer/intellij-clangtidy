@@ -29,8 +29,11 @@ import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.ui.CheckboxTree;
 import com.intellij.ui.ColoredTreeCellRenderer;
 import com.intellij.ui.SimpleTextAttributes;
+import com.intellij.ui.TreeSpeedSearch;
+import com.intellij.ui.speedSearch.SpeedSearchUtil;
 import com.intellij.ui.treeStructure.Tree;
 import com.intellij.util.PlatformIcons;
+import com.intellij.util.ui.tree.TreeUtil;
 import de.wieselbau.clion.clangtidy.NotificationFactory;
 import de.wieselbau.clion.clangtidy.tidy.ApplyFixesBackgroundTask;
 import de.wieselbau.clion.clangtidy.tidy.FixFileEntry;
@@ -65,6 +68,7 @@ public class ApplyResultsDialog extends DialogWrapper {
 	private FixProjectHelper	helper;
 
 	private FilesTreeModel		listMergeableFilesModel;
+	private TreeSpeedSearch		listMergeableFilesModelSpeedSearch;
 
 
 	private static class FixFileEntryNode extends FileNode {
@@ -143,6 +147,13 @@ public class ApplyResultsDialog extends DialogWrapper {
 		listMergeableFiles = new CheckboxTree();
 		listMergeableFiles.addTreeSelectionListener(this::onListSelectionChanged);
 		listMergeableFiles.getSelectionModel().setSelectionMode(TreeSelectionModel.DISCONTIGUOUS_TREE_SELECTION);
+
+		listMergeableFilesModelSpeedSearch = new TreeSpeedSearch(
+				listMergeableFiles,
+				FilesTreeModel::NodeToString
+		);
+
+		TreeUtil.installActions(listMergeableFiles);
 	}
 
 
@@ -201,6 +212,7 @@ public class ApplyResultsDialog extends DialogWrapper {
 				public void customizeRenderer(JTree tree, Object value, boolean selected, boolean expanded, boolean leaf, int row, boolean hasFocus) {
 					super.customizeRenderer(tree, value, selected, expanded, leaf, row, hasFocus);
 					FilesTreeCellRenderer.defaultCustomizeFilesTreeCellRenderer(tree, getTextRenderer(), value, selected, expanded, leaf, row, hasFocus);
+					SpeedSearchUtil.applySpeedSearchHighlighting(tree, getTextRenderer(), true, selected);
 				}
 		});
 

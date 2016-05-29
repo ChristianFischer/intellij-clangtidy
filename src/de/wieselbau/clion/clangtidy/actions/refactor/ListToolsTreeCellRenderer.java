@@ -24,6 +24,7 @@ package de.wieselbau.clion.clangtidy.actions.refactor;
 
 import com.intellij.ui.CheckboxTree;
 import com.intellij.ui.SimpleTextAttributes;
+import com.intellij.ui.speedSearch.SpeedSearchUtil;
 import de.wieselbau.clion.clangtidy.tidy.ToolController;
 
 import javax.swing.*;
@@ -44,6 +45,7 @@ public class ListToolsTreeCellRenderer extends CheckboxTree.CheckboxTreeCellRend
 			@SuppressWarnings("unchecked")
 			ListToolsTreeDataModel.Entry<ToolController> entry = (ListToolsTreeDataModel.Entry<ToolController>)value;
 			getTextRenderer().append(entry.getDisplayName(), SimpleTextAttributes.REGULAR_ATTRIBUTES);
+			SpeedSearchUtil.applySpeedSearchHighlighting(tree, getTextRenderer(), true, selected);
 		}
 	}
 }

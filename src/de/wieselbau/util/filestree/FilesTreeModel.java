@@ -42,6 +42,31 @@ public class FilesTreeModel extends DefaultTreeModel {
 	private final static String	ROOT_ID		= "root";
 	private final FilesTreeNode	ROOT;
 
+
+	/**
+	 * Utility function to get the string value of a node.
+	 * @param node	An object. If this object is an instance of {@link FilesTreeNode} it returns its string value.
+	 * @return		if the object was a valid node, returns its string value, otherwise {@code null}.
+	 */
+	public static String NodeToString(@NotNull Object node) {
+		if (node instanceof FilesTreeNode) {
+			return NodeToString((FilesTreeNode)node);
+		}
+
+		return null;
+	}
+
+
+	/**
+	 * Utility function to get the string value of an node.
+	 * @param node	A node which string value should be returned.
+	 * @return		The string value of the given node.
+	 */
+	public static String NodeToString(@NotNull FilesTreeNode node) {
+		return node.getDisplayName();
+	}
+
+
 	public FilesTreeModel() {
 		super(new FilesTreeNode(ROOT_ID));
 		ROOT = (FilesTreeNode)getRoot();
