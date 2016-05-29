@@ -117,6 +117,10 @@ public class TypeConverter {
 			return t;
 		}
 
+		if (string == null) {
+			return null;
+		}
+
 		Class aliasType  = getWrapperClass(type);
 		Class targetType = aliasType!=null ? aliasType : type;
 

@@ -90,6 +90,12 @@ public class Options {
 	}
 
 
+	public static boolean hasToolProperty(@NotNull ToolController tool, @NotNull String property) {
+		String propertyName = getPropertyName(tool, property);
+		return properties.isValueSet(propertyName);
+	}
+
+
 	public static @Nullable String getToolProperty(@NotNull ToolController tool, @NotNull String property) {
 		String propertyName = getPropertyName(tool, property);
 		if (properties.isValueSet(propertyName)) {
@@ -101,20 +107,22 @@ public class Options {
 
 
 	public static @NotNull <T> T getToolProperty(@NotNull ToolController tool, @NotNull String property, @NotNull T defaultValue) {
-		try {
-			String stringVal = getToolProperty(tool, property);
+		if (hasToolProperty(tool, property)) {
+			try {
+				String stringVal = getToolProperty(tool, property);
 
-			Class<?> clazz = defaultValue.getClass();
-			Object value = TypeConverter.convertTo(defaultValue.getClass(), stringVal);
+				Class<?> clazz = defaultValue.getClass();
+				Object value = TypeConverter.convertTo(defaultValue.getClass(), stringVal);
 
-			if (clazz.isInstance(value)) {
-				@SuppressWarnings("unchecked")
-				T tValue = (T)value;
-				return tValue;
+				if (clazz.isInstance(value)) {
+					@SuppressWarnings("unchecked")
+					T tValue = (T) value;
+					return tValue;
+				}
 			}
-		}
-		catch (Exception e) {
-			Logger.getInstance(Options.class).error(e);
+			catch (Exception e) {
+				Logger.getInstance(Options.class).error(e);
+			}
 		}
 
 		return defaultValue;
