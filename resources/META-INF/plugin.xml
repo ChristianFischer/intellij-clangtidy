@@ -53,6 +53,7 @@ To learn more about clang-tidy visit
   <b>Version 1.1</b><br/>
   <ul>
     <li>Results dialog now shows your results in a file tree instead of an ugly list view</li>
+    <li>Improved Merge dialog</li>
   </ul>
 </p>
 ]]></change-notes>
