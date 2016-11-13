@@ -94,12 +94,18 @@ public class CLangTidyLocalInspection extends LocalInspectionTool {
 
 						if (document != null) {
 							int lineNumber = issue.getLineNumber() - 1;
+							int lineColumn = issue.getLineColumn() - 1;
 							int lineStart  = document.getLineStartOffset(lineNumber);
 							int lineEnd    = document.getLineEndOffset(lineNumber);
 
+							TextRange range = TextRange.create(
+									Math.max(lineStart, lineStart + lineColumn),
+									lineEnd
+							);
+
 							ProblemDescriptor problem = manager.createProblemDescriptor(
 									file,
-									TextRange.create(lineStart + issue.getLineColumn() - 1, lineEnd),
+									range,
 									issue.getMessage(),
 									issue.getType(),
 									isOnTheFly
