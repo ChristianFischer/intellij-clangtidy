@@ -26,10 +26,13 @@ import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.util.SystemInfo;
+import com.jetbrains.cidr.cpp.cmake.CMakeSettings;
 import com.jetbrains.cidr.cpp.cmake.workspace.CMakeWorkspace;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Helper class to fix missing compile commands within the current cmake project.
@@ -56,17 +59,43 @@ public class FixCompileCommandsUtil {
 
 	public static void fixMissingCompileCommands(@NotNull CompileCommandsNotFoundException e) {
 		CMakeWorkspace workspace = e.getCMakeWorkspace();
-		String options = workspace.getSettings().getGenerationOptions();
-		String option = "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON";
+		CMakeSettings settings = workspace.getSettings();
+		final String option = "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON";
 
-		if (options == null) {
-			options = option;
-		}
-		else {
-			options += " " + option;
+		List<CMakeSettings.Configuration> configurations = settings.getConfigurations();
+		List<CMakeSettings.Configuration> new_configurations = null;
+		boolean configurationsChanged = false;
+
+		for (int i = 0; i < configurations.size(); i++) {
+			CMakeSettings.Configuration configuration = configurations.get(i);
+			String options = configuration.getGenerationOptions();
+			boolean update = false;
+
+			if (options == null) {
+				options = option;
+				update = true;
+			}
+			else if (!options.contains(option)) {
+				options += " " + option;
+				update = true;
+			}
+
+			if (update) {
+				CMakeSettings.Configuration new_configuration = configuration.withGenerationOptions(options);
+
+				if (new_configurations == null) {
+					new_configurations = new ArrayList<>(configurations.size());
+					new_configurations.addAll(configurations);
+				}
+
+				new_configurations.set(i, new_configuration);
+				configurationsChanged = true;
+			}
 		}
 
-		workspace.getSettings().setGenerationOptions(options);
+		if (configurationsChanged) {
+			settings.setConfigurations(new_configurations);
+		}
 	}
 
 

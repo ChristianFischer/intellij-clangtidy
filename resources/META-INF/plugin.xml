@@ -58,7 +58,7 @@ To learn more about clang-tidy visit
 </p>
 ]]></change-notes>
 
-  <idea-version since-build="141.0"/>
+  <idea-version since-build="163.0"/>
 
   <depends>com.intellij.modules.clion</depends>
 

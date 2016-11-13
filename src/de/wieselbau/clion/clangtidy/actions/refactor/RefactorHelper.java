@@ -23,6 +23,7 @@
 package de.wieselbau.clion.clangtidy.actions.refactor;
 
 import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.vfs.VirtualFile;
@@ -31,6 +32,8 @@ import de.wieselbau.clion.clangtidy.NotificationFactory;
 import de.wieselbau.clion.clangtidy.Options;
 import de.wieselbau.clion.clangtidy.tidy.*;
 import org.jetbrains.annotations.NotNull;
+
+import java.io.IOException;
 
 /**
  * Helper class, which starts the refactoring provided by clang-tidy.
@@ -70,6 +73,10 @@ public class RefactorHelper {
 		}
 		catch(CompileCommandsNotFoundException e) {
 			FixCompileCommandsUtil.askToFixMissingCompileCommands(project, e);
+			return false;
+		}
+		catch(IOException e) {
+			Logger.getInstance(this.getClass()).error(e);
 			return false;
 		}
 

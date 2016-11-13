@@ -28,6 +28,7 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.TextRange;
 import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.openapi.vfs.VirtualFile;
+import com.jetbrains.cidr.cpp.cmake.CMakeSettings;
 import com.jetbrains.cidr.cpp.cmake.workspace.CMakeWorkspace;
 import de.wieselbau.clion.clangtidy.Options;
 import de.wieselbau.util.properties.PropertiesContainer;
@@ -80,7 +81,10 @@ public class Scanner {
 	}
 
 
-	public Scanner(Project project) throws CompileCommandsNotFoundException {
+	public Scanner(Project project) throws
+			CompileCommandsNotFoundException,
+			IOException
+	{
 		this();
 
 		CMakeWorkspace cMakeWorkspace = CMakeWorkspace.getInstance(project);
@@ -93,7 +97,10 @@ public class Scanner {
 	}
 
 
-	protected void initWithCMake(CMakeWorkspace cMakeWorkspace) throws CompileCommandsNotFoundException {
+	protected void initWithCMake(CMakeWorkspace cMakeWorkspace) throws
+			CompileCommandsNotFoundException,
+			IOException
+	{
 		this.cMakeWorkspace = cMakeWorkspace;
 
 		if (this.cMakeWorkspace == null) {
@@ -101,10 +108,21 @@ public class Scanner {
 		}
 
 		// determine where to store fixes
-		fixesTargetFile = new File(cMakeWorkspace.getProjectGeneratedDir() + "/clang-tidy.yaml");
+		fixesTargetFile = File.createTempFile("clang-tidy-", ".yaml");
+		Logger.getInstance(this.getClass()).info("Storing results in: " + fixesTargetFile);
 
-		// todo: find out, which is the active configuration for the current project, or use __default__ directory
-		File configDir = cMakeWorkspace.getConfigurationGeneratedDir("Debug");
+		List<CMakeSettings.Configuration> configurations = cMakeWorkspace.getSettings().getConfigurations();
+		if (configurations.isEmpty()) {
+			throw new CompileCommandsNotFoundException(cMakeWorkspace);
+		}
+
+		// select the first configuration in the list
+		// todo: find out, which is the active configuration for the current project
+		CMakeSettings.Configuration selectedConfiguration = configurations.get(0);
+		String selectedConfigurationName = selectedConfiguration.getConfigName();
+
+		// get the path of generated files of the selected configuration
+		File configDir = cMakeWorkspace.getConfigurationGeneratedDir(selectedConfigurationName);
 		if (configDir == null) {
 			throw new CompileCommandsNotFoundException(cMakeWorkspace);
 		}
