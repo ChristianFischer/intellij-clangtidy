@@ -30,6 +30,7 @@ import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.jetbrains.cidr.cpp.cmake.CMakeSettings;
 import com.jetbrains.cidr.cpp.cmake.workspace.CMakeWorkspace;
+import de.wieselbau.clion.clangtidy.NotificationFactory;
 import de.wieselbau.clion.clangtidy.Options;
 import de.wieselbau.util.properties.PropertiesContainer;
 import de.wieselbau.util.properties.PropertyInstance;
@@ -324,6 +325,9 @@ public class Scanner {
 					errorLog.toString()
 			);
 		}
+
+		// the scan was successful, so on next fail, the notification will be shown again
+		NotificationFactory.resetCompileCommandsNotFoundNotification();
 
 		return success && !readingFileFailed[0];
 	}

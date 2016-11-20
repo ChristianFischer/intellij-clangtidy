@@ -33,6 +33,7 @@ import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiFile;
 import com.jetbrains.cidr.lang.OCLanguageKind;
 import com.jetbrains.cidr.lang.psi.impl.OCFileImpl;
+import de.wieselbau.clion.clangtidy.NotificationFactory;
 import de.wieselbau.clion.clangtidy.tidy.CompileCommandsNotFoundException;
 import de.wieselbau.clion.clangtidy.tidy.Issue;
 import de.wieselbau.clion.clangtidy.tidy.Scanner;
@@ -121,7 +122,10 @@ public class CLangTidyLocalInspection extends LocalInspectionTool {
 				}
 			}
 		}
-		catch (CompileCommandsNotFoundException | IOException e) {
+		catch (CompileCommandsNotFoundException e) {
+			NotificationFactory.notifyCompileCommandsNotFound(file.getProject(), e.getCMakeWorkspace());
+		}
+		catch (IOException e) {
 			Logger.getInstance(this.getClass()).error(e);
 		}
 

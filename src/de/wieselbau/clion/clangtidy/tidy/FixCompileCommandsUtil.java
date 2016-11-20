@@ -22,6 +22,7 @@
 
 package de.wieselbau.clion.clangtidy.tidy;
 
+import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.Messages;
@@ -59,6 +60,11 @@ public class FixCompileCommandsUtil {
 
 	public static void fixMissingCompileCommands(@NotNull CompileCommandsNotFoundException e) {
 		CMakeWorkspace workspace = e.getCMakeWorkspace();
+		fixMissingCompileCommands(workspace);
+	}
+
+
+	public static void fixMissingCompileCommands(@NotNull CMakeWorkspace workspace) {
 		CMakeSettings settings = workspace.getSettings();
 		final String option = "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON";
 
@@ -94,7 +100,10 @@ public class FixCompileCommandsUtil {
 		}
 
 		if (configurationsChanged) {
-			settings.setConfigurations(new_configurations);
+			final List<CMakeSettings.Configuration> set_configurations = new_configurations;
+			ApplicationManager.getApplication().runWriteAction(() -> {
+				settings.setConfigurations(set_configurations);
+			});
 		}
 	}
 

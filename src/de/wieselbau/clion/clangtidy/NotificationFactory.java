@@ -24,9 +24,13 @@ package de.wieselbau.clion.clangtidy;
 
 import com.intellij.notification.Notification;
 import com.intellij.notification.NotificationType;
+import com.intellij.openapi.actionSystem.AnAction;
+import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.vfs.VirtualFile;
+import com.jetbrains.cidr.cpp.cmake.workspace.CMakeWorkspace;
+import de.wieselbau.clion.clangtidy.tidy.FixCompileCommandsUtil;
 import de.wieselbau.clion.clangtidy.tidy.ScannerExecutionException;
 import org.jetbrains.annotations.NotNull;
 
@@ -36,8 +40,15 @@ import org.jetbrains.annotations.NotNull;
 public class NotificationFactory {
 	public final static String GroupId	= "clang-tidy";
 
+	private static boolean wasCompileCommandsNotFoundNotificationShown			= false;
+
 
 	private NotificationFactory() {}
+
+
+	public static void resetCompileCommandsNotFoundNotification() {
+		wasCompileCommandsNotFoundNotificationShown = false;
+	}
 
 
 	public static void notifyCLangTidyNotConfigured(@NotNull Project project) {
@@ -66,17 +77,28 @@ public class NotificationFactory {
 	}
 
 
-	public static void notifyCompileCommandsNotFound(@NotNull Project project) {
-		Notification notification = new Notification(
-				GroupId,
-				"Missing compile_commands.json",
-				"clang-tidy did not found a compile_commands.json file in your CMake project.<br/>"
-				 + "Please add <code><b>CMAKE_ENABLE_COMPILE_COMMANDS=ON</b></code>"
-				 + " to your CMake configuration and rebuild your project",
-				NotificationType.ERROR
-		);
+	public static void notifyCompileCommandsNotFound(@NotNull Project project, @NotNull CMakeWorkspace workspace) {
+		if (!wasCompileCommandsNotFoundNotificationShown) {
+			Notification notification = new Notification(
+					GroupId,
+					"Missing compile_commands.json",
+					"clang-tidy did not found a compile_commands.json file in your CMake project.<br/>"
+					 + "Please add <code><b>CMAKE_ENABLE_COMPILE_COMMANDS=ON</b></code>"
+					 + " to your CMake configuration and rebuild your project",
+					NotificationType.WARNING
+			);
 
-		notification.notify(project);
+			notification.addAction(new AnAction("Update CMake configuration") {
+				@Override
+				public void actionPerformed(AnActionEvent anActionEvent) {
+					FixCompileCommandsUtil.fixMissingCompileCommands(workspace);
+				}
+			});
+
+			notification.notify(project);
+
+			wasCompileCommandsNotFoundNotificationShown = true;
+		}
 	}
 
 
