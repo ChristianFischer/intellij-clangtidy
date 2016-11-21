@@ -28,6 +28,8 @@ import com.intellij.codeInspection.ProblemDescriptor;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.fileEditor.FileDocumentManager;
+import com.intellij.openapi.fileEditor.FileEditor;
+import com.intellij.openapi.fileEditor.FileEditorManager;
 import com.intellij.openapi.util.TextRange;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiFile;
@@ -61,12 +63,42 @@ public class CLangTidyLocalInspection extends LocalInspectionTool {
 		return false;
 	}
 
+
+	protected static boolean isSaved(@NotNull PsiFile file) {
+		VirtualFile virtualFile = file.getVirtualFile();
+		Document document = FileDocumentManager.getInstance().getCachedDocument(virtualFile);
+
+		if (document != null) {
+			FileEditorManager fileEditorManager = FileEditorManager.getInstance(file.getProject());
+
+			if (fileEditorManager.isFileOpen(virtualFile)) {
+				for(FileEditor editor : fileEditorManager.getEditors(virtualFile)) {
+					if (editor.isModified()) {
+						return false;
+					}
+				}
+
+				return true;
+			}
+			else {
+				// no editor opened, so data should be saved.
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+
 	@Nullable
 	@Override
 	public ProblemDescriptor[] checkFile(@NotNull PsiFile file, @NotNull InspectionManager manager, boolean isOnTheFly) {
 		ProblemDescriptor[] problems = null;
 
-		if (isCppFile(file)) {
+		if (
+				isCppFile(file)
+		//	&&	isSaved(file)
+		) {
 			problems = checkCppFile(file, manager, isOnTheFly);
 		}
 
@@ -96,6 +128,11 @@ public class CLangTidyLocalInspection extends LocalInspectionTool {
 						if (document != null) {
 							int lineNumber = issue.getLineNumber() - 1;
 							int lineColumn = issue.getLineColumn() - 1;
+
+							if (lineNumber >= document.getLineCount()) {
+								continue;
+							}
+
 							int lineStart  = document.getLineStartOffset(lineNumber);
 							int lineEnd    = document.getLineEndOffset(lineNumber);
 
