@@ -1,7 +1,7 @@
 <idea-plugin version="2">
   <id>de.wieselbau.clion.clangtidy</id>
   <name>CLion clang-tidy integration</name>
-  <version>1.1.1</version>
+  <version>1.1.2</version>
   <vendor
           email="baldur@wieselbau.de"
           url="http://www.bitbucket.com/baldur/clion-clangtidy"
@@ -50,15 +50,12 @@ To learn more about clang-tidy visit
 
   <change-notes><![CDATA[
 <p>
-  <b>Version 1.1.1</b><br/>
+  <b>Version 1.1.2</b><br/>
   <ul>
-    <li>Migrated to CLion 2016.3</li>
-  </ul>
-
-  <b>Version 1.1</b><br/>
-  <ul>
-    <li>Results dialog now shows your results in a file tree instead of an ugly list view</li>
-    <li>Improved Merge dialog</li>
+    <li>Added a message when the inspection fails because of missing compile_commands.json file
+        with a hint to update the CMake configuration
+    </li>
+    <li>Fixed an exception when the plugin tries to update the CMake configuration</li>
   </ul>
 </p>
 ]]></change-notes>
