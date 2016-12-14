@@ -123,7 +123,7 @@ public class Scanner {
 		String selectedConfigurationName = selectedConfiguration.getConfigName();
 
 		// get the path of generated files of the selected configuration
-		File configDir = cMakeWorkspace.getConfigurationGeneratedDir(selectedConfigurationName);
+		File configDir = cMakeWorkspace.getEffectiveConfigurationGenerationDir(selectedConfigurationName, null);
 		if (configDir == null) {
 			throw new CompileCommandsNotFoundException(cMakeWorkspace);
 		}
