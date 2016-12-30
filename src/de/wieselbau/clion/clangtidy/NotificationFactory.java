@@ -92,6 +92,7 @@ public class NotificationFactory {
 				@Override
 				public void actionPerformed(AnActionEvent anActionEvent) {
 					FixCompileCommandsUtil.fixMissingCompileCommands(workspace);
+					notification.expire();
 				}
 			});
 
