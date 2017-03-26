@@ -39,7 +39,27 @@ import java.util.List;
  * Helper class to fix missing compile commands within the current cmake project.
  */
 public class FixCompileCommandsUtil {
-	public static void askToFixMissingCompileCommands(@NotNull Project project, @NotNull CompileCommandsNotFoundException e) {
+	public static boolean needsToFixConfigurations(@NotNull CMakeWorkspace workspace) {
+		CMakeSettings settings = workspace.getSettings();
+		final String option = "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON";
+
+		for (CMakeSettings.Configuration configuration : settings.getConfigurations()) {
+			String options = configuration.getGenerationOptions();
+
+			if (options == null) {
+				return true;
+			}
+
+			if (!options.contains(option)) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+
+	public static void askToFixMissingCompileCommands(@NotNull Project project, @NotNull CMakeWorkspace workspace) {
 		int result = Messages.showYesNoDialog(
 				project,
 				"There is no compile_commands.json file in your project's build directory.\n"
@@ -53,7 +73,7 @@ public class FixCompileCommandsUtil {
 		);
 
 		if (result == Messages.YES) {
-			fixMissingCompileCommands(e);
+			fixMissingCompileCommands(workspace);
 		}
 	}
 

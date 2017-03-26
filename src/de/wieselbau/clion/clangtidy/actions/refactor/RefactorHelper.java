@@ -42,7 +42,7 @@ public class RefactorHelper {
 
 	private Project					project;
 	private CMakeWorkspace			cMakeWorkspace;
-	private SourceFileSelection sourceFiles;
+	private SourceFileSelection		sourceFiles;
 
 
 	public RefactorHelper(@NotNull Project project) {
@@ -61,6 +61,11 @@ public class RefactorHelper {
 			return false;
 		}
 
+		if (FixCompileCommandsUtil.needsToFixConfigurations(cMakeWorkspace)) {
+			FixCompileCommandsUtil.askToFixMissingCompileCommands(project, cMakeWorkspace);
+			return false;
+		}
+
 		if (files == null || files.length == 0) {
 			NotificationFactory.notifyNoFilesSelected(project);
 			return false;
@@ -70,10 +75,6 @@ public class RefactorHelper {
 		try {
 			scanner = new Scanner(project);
 			scanner.setFixIssues(Scanner.FixIssues.StoreFixes);
-		}
-		catch(CompileCommandsNotFoundException e) {
-			FixCompileCommandsUtil.askToFixMissingCompileCommands(project, e);
-			return false;
 		}
 		catch(IOException e) {
 			Logger.getInstance(this.getClass()).error(e);

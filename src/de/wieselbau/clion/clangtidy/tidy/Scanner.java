@@ -23,13 +23,17 @@
 package de.wieselbau.clion.clangtidy.tidy;
 
 import com.intellij.codeInspection.ProblemHighlightType;
+import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.util.Computable;
 import com.intellij.openapi.util.TextRange;
 import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.openapi.vfs.VirtualFile;
-import com.jetbrains.cidr.cpp.cmake.CMakeSettings;
+import com.jetbrains.cidr.cpp.cmake.workspace.CMakeResolveConfiguration;
 import com.jetbrains.cidr.cpp.cmake.workspace.CMakeWorkspace;
+import com.jetbrains.cidr.lang.preprocessor.OCInclusionContextUtil;
+import com.jetbrains.cidr.lang.workspace.OCResolveConfiguration;
 import de.wieselbau.clion.clangtidy.NotificationFactory;
 import de.wieselbau.clion.clangtidy.Options;
 import de.wieselbau.util.properties.PropertiesContainer;
@@ -69,8 +73,8 @@ public class Scanner {
 		StoreFixes,
 	}
 
+	protected Project				project;
 	protected CMakeWorkspace		cMakeWorkspace;
-	protected File					compileCommandsFile;
 	protected File					fixesTargetFile;
 	protected FixIssues				fixIssues = FixIssues.DontFix;
 	protected List<ToolController>	tools;
@@ -83,10 +87,11 @@ public class Scanner {
 
 
 	public Scanner(Project project) throws
-			CompileCommandsNotFoundException,
 			IOException
 	{
 		this();
+
+		this.project = project;
 
 		CMakeWorkspace cMakeWorkspace = CMakeWorkspace.getInstance(project);
 		if (cMakeWorkspace != null) {
@@ -99,7 +104,6 @@ public class Scanner {
 
 
 	protected void initWithCMake(CMakeWorkspace cMakeWorkspace) throws
-			CompileCommandsNotFoundException,
 			IOException
 	{
 		this.cMakeWorkspace = cMakeWorkspace;
@@ -112,23 +116,26 @@ public class Scanner {
 		fixesTargetFile = File.createTempFile("clang-tidy-", ".yaml");
 		Logger.getInstance(this.getClass()).info("Storing results in: " + fixesTargetFile);
 
-		List<CMakeSettings.Configuration> configurations = cMakeWorkspace.getSettings().getConfigurations();
-		if (configurations.isEmpty()) {
-			throw new CompileCommandsNotFoundException(cMakeWorkspace);
-		}
+		ready = true;
+	}
 
-		// select the first configuration in the list
-		// todo: find out, which is the active configuration for the current project
-		CMakeSettings.Configuration selectedConfiguration = configurations.get(0);
-		String selectedConfigurationName = selectedConfiguration.getConfigName();
 
-		// get the path of generated files of the selected configuration
-		File configDir = cMakeWorkspace.getEffectiveConfigurationGenerationDir(selectedConfigurationName, null);
-		if (configDir == null) {
-			throw new CompileCommandsNotFoundException(cMakeWorkspace);
-		}
+	private File findCompileCommandsForFile(@NotNull VirtualFile file) throws CompileCommandsNotFoundException {
+		File compileCommandsFile = ApplicationManager.getApplication().runReadAction((Computable<File>) () -> {
+			OCResolveConfiguration configuration = OCInclusionContextUtil.getActiveConfiguration(file, project);
 
-		compileCommandsFile = new File(configDir.getAbsolutePath() + "/compile_commands.json");
+			File configDir = null;
+
+			if (configuration instanceof CMakeResolveConfiguration) {
+				configDir = ((CMakeResolveConfiguration) configuration).getConfiguration().getConfigurationGenerationDir();
+			}
+
+			if (configDir == null) {
+				return null;
+			}
+
+			return new File(configDir.getAbsolutePath() + "/compile_commands.json");
+		});
 
 		if (!compileCommandsFile.exists()) {
 			throw new CompileCommandsNotFoundException(cMakeWorkspace);
@@ -138,7 +145,7 @@ public class Scanner {
 			FixCompileCommandsUtil.fixWindowsPaths(compileCommandsFile);
 		}
 
-		ready = true;
+		return compileCommandsFile;
 	}
 
 
@@ -214,7 +221,10 @@ public class Scanner {
 	}
 
 
-	public boolean runOnFiles(@NotNull VirtualFile file, ScannerResult result) throws IOException {
+	public boolean runOnFiles(@NotNull VirtualFile file, ScannerResult result) throws
+			CompileCommandsNotFoundException,
+			IOException
+	{
 		if (!ready) {
 			throw new IllegalStateException("CLangTidy runner not properly configured");
 		}
@@ -226,6 +236,9 @@ public class Scanner {
 		if (file.isDirectory()) {
 			throw new IOException("File is a directory.");
 		}
+
+		// find compile commands
+		File compileCommandsFile = findCompileCommandsForFile(file);
 
 		ProcessWrapper process = new ProcessWrapper(Options.getCLangTidyExe());
 		process.addArgument("-p");

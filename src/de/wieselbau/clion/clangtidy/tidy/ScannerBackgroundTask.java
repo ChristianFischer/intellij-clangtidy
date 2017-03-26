@@ -86,6 +86,10 @@ public class ScannerBackgroundTask extends Task.Modal {
 			try {
 				successful = scanner.runOnFiles(file, scannerResult);
 			}
+			catch(CompileCommandsNotFoundException e) {
+				NotificationFactory.notifyCompileCommandsNotFound(project, e.getCMakeWorkspace());
+				break;
+			}
 			catch (ScannerExecutionException e) {
 				NotificationFactory.notifyScanFailedOnFile(project, e);
 				successful = false;

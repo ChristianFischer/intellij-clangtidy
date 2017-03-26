@@ -1,0 +1,26 @@
+---
+MainSourceFile:  'D:\Path\to\my\SourceFile.cpp'
+Diagnostics:
+  - DiagnosticName:  modernize-use-equals-default
+    Replacements:
+      - FilePath:        'D:/Path/to/my/SourceFile.cpp'
+        Offset:          31
+        Length:          8
+        ReplacementText: '= default;'
+  - DiagnosticName:  modernize-redundant-void-arg
+    Replacements:
+      - FilePath:        'D:/Path/to/my/SourceFile.cpp'
+        Offset:          57
+        Length:          4
+        ReplacementText: ''
+  - DiagnosticName:  modernize-loop-convert
+    Replacements:
+      - FilePath:        'D:/Path/to/my/SourceFile.cpp'
+        Offset:          284
+        Length:          19
+        ReplacementText: '(int i : arr)'
+      - FilePath:        'D:/Path/to/my/SourceFile.cpp'
+        Offset:          328
+        Length:          6
+        ReplacementText: i
+...
