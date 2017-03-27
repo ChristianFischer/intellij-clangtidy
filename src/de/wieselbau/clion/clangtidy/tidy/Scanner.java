@@ -22,13 +22,10 @@
 
 package de.wieselbau.clion.clangtidy.tidy;
 
-import com.intellij.codeInspection.ProblemHighlightType;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.Computable;
-import com.intellij.openapi.util.TextRange;
-import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.jetbrains.cidr.cpp.cmake.workspace.CMakeResolveConfiguration;
 import com.jetbrains.cidr.cpp.cmake.workspace.CMakeWorkspace;
@@ -38,7 +35,6 @@ import de.wieselbau.clion.clangtidy.NotificationFactory;
 import de.wieselbau.clion.clangtidy.Options;
 import de.wieselbau.util.properties.PropertiesContainer;
 import de.wieselbau.util.properties.PropertyInstance;
-import de.wieselbau.util.yaml.YamlReader;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
@@ -47,18 +43,11 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * A helper class to run the clang-tidy executable and parse it's output.
  */
 public class Scanner {
-	//language=RegExp
-	protected final static Pattern LINE_ISSUE_PATTERN
-			= Pattern.compile("^(.*):(\\d+):(\\d+):\\s*(warning|error):(.*)\\s*\\[(.*)\\]$");
-
 	/**
 	 * Determine if refactoring operations should be applied.
 	 */
@@ -225,6 +214,8 @@ public class Scanner {
 			CompileCommandsNotFoundException,
 			IOException
 	{
+		final ScannerResultUtil resultUtil = new ScannerResultUtil(result);
+
 		if (!ready) {
 			throw new IllegalStateException("CLangTidy runner not properly configured");
 		}
@@ -275,30 +266,9 @@ public class Scanner {
 				(String line) -> {
 					Log.clangtidy.debug(line);
 
-					Matcher m = LINE_ISSUE_PATTERN.matcher(line);
-					if (m.matches()) {
-						Issue issue = new Issue();
+					resultUtil.parseIssue(line);
 
-						String type = m.group(4);
-						if ("error".equals(type)) {
-							issue.type = ProblemHighlightType.ERROR;
-						}
-						else {
-							issue.type = ProblemHighlightType.GENERIC_ERROR_OR_WARNING;
-						}
-
-						String path				= m.group(1);
-						issue.sourceFile		= LocalFileSystem.getInstance().findFileByPath(path);
-						issue.lineNumber		= Integer.parseInt(m.group(2));
-						issue.lineColumn		= Integer.parseInt(m.group(3));
-						issue.message			= m.group(5);
-						issue.group				= m.group(6);
-
-						if (result != null) {
-							result.addIssue(issue);
-						}
-					}
-					else if (line.startsWith("error: error reading")) {
+					if (line.startsWith("error: error reading")) {
 						// failed to read an input file
 						// this may be a hint to an issue on windows, where paths with backslash separators
 						// within the compile_commands.json are not recognized
@@ -328,7 +298,7 @@ public class Scanner {
 			&&	result != null
 			&&	fixesTargetFile.exists()
 		) {
-			readFixesList(fixesTargetFile, result);
+			resultUtil.readFixesList(fixesTargetFile);
 			fixesTargetFile.delete();
 		}
 
@@ -343,68 +313,5 @@ public class Scanner {
 		NotificationFactory.resetCompileCommandsNotFoundNotification();
 
 		return success && !readingFileFailed[0];
-	}
-
-
-	protected void readFixesList(@NotNull File yamlFile, @NotNull ScannerResult result) {
-		try {
-			Object yaml = new YamlReader(yamlFile).getRootObject();
-			if (yaml != null && yaml instanceof Map) {
-				@SuppressWarnings("unchecked")
-				Map<String,Object> map = (Map<String,Object>)yaml;
-
-				if (map.containsKey("Replacements")) {
-					Object replacements = map.get("Replacements");
-
-					if (replacements != null && replacements instanceof List) {
-						@SuppressWarnings("unchecked")
-						List<Object> list = (List<Object>)replacements;
-
-						for(Object o : list) {
-							if (o instanceof Map) {
-								@SuppressWarnings("unchecked")
-								Fix fix = parseFix((Map<String,Object>)o);
-
-								if (fix != null) {
-									result.addFix(fix);
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-		catch (IOException e) {
-			Logger.getInstance(this.getClass()).error(e);
-		}
-	}
-
-
-	private static Fix parseFix(Map<String,Object> map) {
-		Object fileName		= map.get("FilePath");
-		Object length		= map.get("Length");
-		Object offset		= map.get("Offset");
-		Object replacement	= map.get("ReplacementText");
-
-		if (
-				fileName	!= null
-			&&	replacement	!= null
-			&&	length		!= null	&& length instanceof Number
-			&&	offset		!= null && offset instanceof Number
-		) {
-			int iOffset = ((Number)offset).intValue();
-			int iLength = ((Number)length).intValue();
-
-			VirtualFile file = LocalFileSystem.getInstance().findFileByPath(fileName.toString());
-			assert file != null;
-
-			return new Fix(
-					file,
-					TextRange.create(iOffset, iOffset + iLength),
-					replacement.toString()
-			);
-		}
-
-		return null;
 	}
 }

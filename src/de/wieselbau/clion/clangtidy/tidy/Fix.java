@@ -23,9 +23,11 @@
 package de.wieselbau.clion.clangtidy.tidy;
 
 import com.intellij.openapi.util.TextRange;
+import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.openapi.vfs.VirtualFile;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.File;
 import java.util.Objects;
 
 /**
@@ -33,13 +35,13 @@ import java.util.Objects;
  */
 public class Fix {
 	private Issue		issue;
-	private VirtualFile file;
+	private File		file;
 	private TextRange	range;
 	private String		original;
 	private String		replacement;
 
 
-	public Fix(@NotNull VirtualFile file, @NotNull TextRange range, @NotNull String replacement) {
+	public Fix(@NotNull File file, @NotNull TextRange range, @NotNull String replacement) {
 		this.file			= file;
 		this.range			= range;
 		this.replacement	= replacement;
@@ -59,7 +61,7 @@ public class Fix {
 		return issue;
 	}
 
-	public VirtualFile getFile() {
+	public File getFile() {
 		return file;
 	}
 
@@ -81,6 +83,11 @@ public class Fix {
 
 	public String getReplacement() {
 		return replacement;
+	}
+
+
+	public VirtualFile findVirtualFile() {
+		return LocalFileSystem.getInstance().findFileByIoFile(file);
 	}
 
 

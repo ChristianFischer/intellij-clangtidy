@@ -48,8 +48,10 @@ public class FixProjectHelper {
 		Map<VirtualFile,FixFileEntry> fixesPerFile = new HashMap<>();
 
 		for(Fix fix : scannerResult.getFixes()) {
-			VirtualFile file = fix.getFile();
+			VirtualFile file = fix.findVirtualFile();
 			FixFileEntry target;
+
+			assert file != null;
 
 			if (fixesPerFile.containsKey(file)) {
 				target = fixesPerFile.get(file);
