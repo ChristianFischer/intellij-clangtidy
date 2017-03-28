@@ -30,8 +30,7 @@ import org.junit.Test;
 import java.io.File;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 
 
 /**
@@ -61,37 +60,55 @@ public class ResultsUnixTest extends AbstractTidyResultsTest {
 
 
 	private void testFix1(@NotNull Fix fix) {
-		assertNotNull(fix.getFile());
-		assertEquals("/home/sweet/home/my/SourceFile.cpp", asUnixPath(fix.getFile()));
+		assertNull(fix.getDiagnosticName());
+		assertEquals(1, fix.getChanges().size());
+		testFix1Change1(fix.getChanges().get(0));
+	}
 
-		assertNotNull(fix.getTextRange());
-		assertEquals(284, fix.getTextRange().getStartOffset());
-		assertEquals(19, fix.getTextRange().getLength());
+	private void testFix1Change1(@NotNull Fix.Change change) {
+		assertNotNull(change.getFile());
+		assertEquals("/home/sweet/home/my/SourceFile.cpp", asUnixPath(change.getFile()));
 
-		assertEquals("(int i : arr)", fix.getReplacement());
+		assertNotNull(change.getTextRange());
+		assertEquals(284, change.getTextRange().getStartOffset());
+		assertEquals(19, change.getTextRange().getLength());
+
+		assertEquals("(int i : arr)", change.getReplacement());
 	}
 
 
 	private void testFix2(@NotNull Fix fix) {
-		assertNotNull(fix.getFile());
-		assertEquals("/home/sweet/home/my/SourceFile.cpp", asUnixPath(fix.getFile()));
+		assertNull(fix.getDiagnosticName());
+		assertEquals(1, fix.getChanges().size());
+		testFix2Change1(fix.getChanges().get(0));
+	}
 
-		assertNotNull(fix.getTextRange());
-		assertEquals(328, fix.getTextRange().getStartOffset());
-		assertEquals(6, fix.getTextRange().getLength());
+	private void testFix2Change1(@NotNull Fix.Change change) {
+		assertNotNull(change.getFile());
+		assertEquals("/home/sweet/home/my/SourceFile.cpp", asUnixPath(change.getFile()));
 
-		assertEquals("i", fix.getReplacement());
+		assertNotNull(change.getTextRange());
+		assertEquals(328, change.getTextRange().getStartOffset());
+		assertEquals(6, change.getTextRange().getLength());
+
+		assertEquals("i", change.getReplacement());
 	}
 
 
 	private void testFix3(@NotNull Fix fix) {
-		assertNotNull(fix.getFile());
-		assertEquals("/home/123/0.h", asUnixPath(fix.getFile()));
+		assertNull(fix.getDiagnosticName());
+		assertEquals(1, fix.getChanges().size());
+		testFix3Change1(fix.getChanges().get(0));
+	}
 
-		assertNotNull(fix.getTextRange());
-		assertEquals(456, fix.getTextRange().getStartOffset());
-		assertEquals(4, fix.getTextRange().getLength());
+	private void testFix3Change1(@NotNull Fix.Change change) {
+		assertNotNull(change.getFile());
+		assertEquals("/home/123/0.h", asUnixPath(change.getFile()));
 
-		assertEquals("nullptr", fix.getReplacement());
+		assertNotNull(change.getTextRange());
+		assertEquals(456, change.getTextRange().getStartOffset());
+		assertEquals(4, change.getTextRange().getLength());
+
+		assertEquals("nullptr", change.getReplacement());
 	}
 }

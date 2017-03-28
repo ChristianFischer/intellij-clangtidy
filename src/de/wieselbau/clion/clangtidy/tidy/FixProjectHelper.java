@@ -48,20 +48,22 @@ public class FixProjectHelper {
 		Map<VirtualFile,FixFileEntry> fixesPerFile = new HashMap<>();
 
 		for(Fix fix : scannerResult.getFixes()) {
-			VirtualFile file = fix.findVirtualFile();
-			FixFileEntry target;
+			for(Fix.Change change : fix.getChanges()) {
+				VirtualFile file = change.findVirtualFile();
+				FixFileEntry target;
 
-			assert file != null;
+				assert file != null;
 
-			if (fixesPerFile.containsKey(file)) {
-				target = fixesPerFile.get(file);
+				if (fixesPerFile.containsKey(file)) {
+					target = fixesPerFile.get(file);
+				}
+				else {
+					target = new FixFileEntry(file);
+					fixesPerFile.put(file, target);
+				}
+
+				target.addChange(change);
 			}
-			else {
-				target = new FixFileEntry(file);
-				fixesPerFile.put(file, target);
-			}
-
-			target.addFix(fix);
 		}
 
 		for(Issue issue : scannerResult.getIssues()) {
@@ -101,10 +103,7 @@ public class FixProjectHelper {
 			this.fixes.add(entry);
 		}
 
-		Collections.sort(
-				this.fixes,
-				(FixFileEntry a, FixFileEntry b) -> a.getFile().toString().compareTo(b.getFile().toString())
-		);
+		this.fixes.sort(Comparator.comparing(ffe -> ffe.getFile().toString()));
 	}
 
 

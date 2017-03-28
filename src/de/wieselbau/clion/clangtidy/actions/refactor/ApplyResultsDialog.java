@@ -118,7 +118,7 @@ public class ApplyResultsDialog extends DialogWrapper {
 				super.customizeRenderer(renderer, selected, expanded, hasFocus);
 
 				renderer.append(
-						" (" + String.valueOf(getEntry().getFixes().size()) + " Changes)",
+						" (" + String.valueOf(getEntry().getChanges().size()) + " Changes)",
 						SimpleTextAttributes.GRAY_ITALIC_ATTRIBUTES
 				);
 			}

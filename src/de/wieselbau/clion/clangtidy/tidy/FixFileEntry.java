@@ -37,6 +37,7 @@ import java.io.InputStream;
 import java.nio.CharBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.function.BiConsumer;
 
@@ -57,20 +58,20 @@ public class FixFileEntry {
 		Failed,
 	}
 
-	private VirtualFile		file;
-	private List<Issue>		issues;
-	private List<Fix>		fixes;
-	private Scope			scope;
-	private Result			result;
-	private boolean			selected;
-	private boolean			prepared;
+	private VirtualFile			file;
+	private List<Issue>			issues;
+	private List<Fix.Change>	changes;
+	private Scope				scope;
+	private Result				result;
+	private boolean				selected;
+	private boolean				prepared;
 
 
 	public FixFileEntry(@NotNull VirtualFile file) {
 		this.file		= file;
 		this.issues		= new ArrayList<>();
-		this.fixes		= new ArrayList<>();
-		this.selected = false;
+		this.changes	= new ArrayList<>();
+		this.selected	= false;
 		this.prepared	= false;
 	}
 
@@ -88,12 +89,12 @@ public class FixFileEntry {
 		return Collections.unmodifiableList(issues);
 	}
 
-	public void addFix(@NotNull Fix fix) {
-		fixes.add(fix);
+	public void addChange(@NotNull Fix.Change change) {
+		changes.add(change);
 	}
 
-	public List<Fix> getFixes() {
-		return Collections.unmodifiableList(fixes);
+	public List<Fix.Change> getChanges() {
+		return Collections.unmodifiableList(changes);
 	}
 
 	public void setScope(@NotNull Scope scope) {
@@ -146,23 +147,23 @@ public class FixFileEntry {
 
 		int offset = 0;
 
-		for(Fix fix : fixes) {
-			int startOffset          = offset + fix.getTextRange().getStartOffset();
-			int endOffsetOriginal    = offset + fix.getTextRange().getEndOffset();
-			int endOffsetReplacement = offset + fix.getTextRange().getStartOffset() + fix.getReplacement().length();
+		for(Fix.Change change : changes) {
+			int startOffset          = offset + change.getTextRange().getStartOffset();
+			int endOffsetOriginal    = offset + change.getTextRange().getEndOffset();
+			int endOffsetReplacement = offset + change.getTextRange().getStartOffset() + change.getReplacement().length();
 
 			if ((startOffset >= content.length()) || (endOffsetOriginal >= content.length())) {
-				throw new IndexOutOfBoundsException("Cannot apply fix " + fix.toString());
+				throw new IndexOutOfBoundsException("Cannot apply fix " + change.toString());
 			}
 
 			boolean hasOriginalContent = (
 					(endOffsetOriginal < content.length())
-				&&	(areSequencesEqual(CharBuffer.wrap(content, startOffset, endOffsetOriginal), fix.getOriginal()))
+				&&	(areSequencesEqual(CharBuffer.wrap(content, startOffset, endOffsetOriginal), change.getOriginal()))
 			);
 
 			boolean hasReplacementContent = (
 					(endOffsetReplacement < content.length())
-				&&	(areSequencesEqual(CharBuffer.wrap(content, startOffset, endOffsetReplacement), fix.getReplacement()))
+				&&	(areSequencesEqual(CharBuffer.wrap(content, startOffset, endOffsetReplacement), change.getReplacement()))
 			);
 
 			boolean canBeApplied = false;
@@ -178,19 +179,19 @@ public class FixFileEntry {
 			if (canBeApplied) {
 				consumer.accept(
 						TextRange.create(startOffset, endOffsetOriginal),
-						fix.getReplacement()
+						change.getReplacement()
 				);
 
 				// check if change is within the content char sequence
 				assert areSequencesEqual(
 						CharBuffer.wrap(content, startOffset, endOffsetReplacement),
-						fix.getReplacement()
+						change.getReplacement()
 				);
 			}
 
 			// offsets will have changed after applying other changes
-			offset -= fix.getTextRange().getLength();
-			offset += fix.getReplacement().length();
+			offset -= change.getTextRange().getLength();
+			offset += change.getReplacement().length();
 		}
 	}
 
@@ -267,10 +268,7 @@ public class FixFileEntry {
 		}
 
 		// ensure, all fixes are sorted in ascending order
-		Collections.sort(
-				fixes,
-				(Fix a, Fix b) -> a.getTextRange().getStartOffset() - b.getTextRange().getStartOffset()
-		);
+		changes.sort(Comparator.comparingInt(change -> change.getTextRange().getStartOffset()));
 
 		// since Intellij uses only \n for linebreaks, but clang-tidy is using the file's native
 		// linebreak style for it's offsets, we have to convert them into \n linebreak offsets
@@ -303,32 +301,34 @@ public class FixFileEntry {
 				}
 			}
 
-			for(Fix fix : fixes) {
-				final int startOffset = fix.getTextRange().getStartOffset();
-				final int endOffset   = fix.getTextRange().getEndOffset();
+			for(Fix.Change change : changes) {
+				final int startOffset = change.getTextRange().getStartOffset();
+				final int endOffset   = change.getTextRange().getEndOffset();
 
 				long startOffsetCorrection = ignorableLineFeeds.stream().filter((Integer i) -> (i <= startOffset)).count();
 				long endOffsetCorrection   = ignorableLineFeeds.stream().filter((Integer i) -> (i <= endOffset)).count();
 
-				fix.setTextRange(TextRange.create(
+				change.setTextRange(TextRange.create(
 						(int)(startOffset - startOffsetCorrection),
 						(int)(endOffset   - endOffsetCorrection)
 				));
 
-				fix.setOriginal(content.substring(startOffset, endOffset).replace("\r\n", "\n").replace('\r', '\n'));
-				assert(fix.getOriginal().length() == fix.getTextRange().getLength());
+				change.setOriginal(content.substring(startOffset, endOffset).replace("\r\n", "\n").replace('\r', '\n'));
+				assert(change.getOriginal().length() == change.getTextRange().getLength());
 
+				/*
 				// try to assign issues to each fix
 				for(Issue issue : issues) {
 					if (lineOffsets.size() >= issue.getLineNumber()) {
 						int lineOffset = lineOffsets.get(issue.getLineNumber() - 1);
 						int offset     = lineOffset + issue.getLineColumn() - 1;
 
-						if (fix.getTextRange().getStartOffset() == offset) {
-							fix.setIssue(issue);
+						if (change.getTextRange().getStartOffset() == offset) {
+							change.setIssue(issue);
 						}
 					}
 				}
+				*/
 			}
 
 			prepared = true;
