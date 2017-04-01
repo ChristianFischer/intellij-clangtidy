@@ -31,8 +31,10 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -96,17 +98,17 @@ public class ScannerResultUtil {
 					if (replacements != null && replacements instanceof List) {
 						@SuppressWarnings("unchecked")
 						List<Object> list = (List<Object>)replacements;
+						parseOldReplacementsList(list);
+					}
+				}
 
-						for(Object o : list) {
-							if (o instanceof Map) {
-								@SuppressWarnings("unchecked")
-								Fix fix = parseFix((Map<String,Object>)o);
+				if (map.containsKey("Diagnostics")) {
+					Object diagnostics = map.get("Diagnostics");
 
-								if (fix != null) {
-									result.addFix(fix);
-								}
-							}
-						}
+					if (diagnostics != null && diagnostics instanceof List) {
+						@SuppressWarnings("unchecked")
+						List<Object> list = (List<Object>)diagnostics;
+						parseNewDiagnosticsList(list);
 					}
 				}
 			}
@@ -117,7 +119,68 @@ public class ScannerResultUtil {
 	}
 
 
-	private Fix parseFix(Map<String,Object> map) {
+	private void parseOldReplacementsList(List<Object> list) {
+		parseReplacements(
+				list,
+				change -> result.addFix(new Fix(change))
+		);
+	}
+
+
+	private void parseNewDiagnosticsList(List<Object> list) {
+		for(Object diagnosticElement : list) {
+			if (diagnosticElement instanceof Map) {
+				@SuppressWarnings("unchecked")
+				Map<String,Object> map = (Map<String,Object>)diagnosticElement;
+				String diagnosticsName = null;
+				List<Object> replacementsList = null;
+
+				if (map.containsKey("DiagnosticName")) {
+					Object o = map.get("DiagnosticName");
+					if (o instanceof String) {
+						diagnosticsName = (String)o;
+					}
+				}
+
+				if (map.containsKey("Replacements")) {
+					Object o = map.get("Replacements");
+					if (o instanceof List) {
+						@SuppressWarnings("unchecked")
+						List<Object> l = (List<Object>)o;
+						replacementsList = l;
+					}
+				}
+
+				if (
+						diagnosticsName != null
+					&&	replacementsList != null
+				) {
+					List<Fix.Change> changes = new ArrayList<>();
+					parseReplacements(replacementsList, changes::add);
+
+					Fix fix = new Fix(diagnosticsName, changes);
+					result.addFix(fix);
+				}
+			}
+		}
+	}
+
+
+	private void parseReplacements(@NotNull List<Object> list, @NotNull Consumer<Fix.Change> consumer) {
+		for(Object o : list) {
+			if (o instanceof Map) {
+				@SuppressWarnings("unchecked")
+				Fix.Change change = parseChange((Map<String,Object>)o);
+
+				if (change != null) {
+					consumer.accept(change);
+				}
+			}
+		}
+	}
+
+
+	private Fix.Change parseChange(Map<String,Object> map) {
 		Object fileName		= map.get("FilePath");
 		Object length		= map.get("Length");
 		Object offset		= map.get("Offset");
@@ -132,7 +195,7 @@ public class ScannerResultUtil {
 			int iOffset = ((Number)offset).intValue();
 			int iLength = ((Number)length).intValue();
 
-			return new Fix(
+			return new Fix.Change(
 					new File(fileName.toString()),
 					TextRange.create(iOffset, iOffset + iLength),
 					replacement.toString()

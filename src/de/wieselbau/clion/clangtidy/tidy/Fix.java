@@ -113,8 +113,25 @@ public class Fix {
 	}
 
 
-	public Fix(@NotNull File file, @NotNull TextRange range, @NotNull String replacement) {
-		changes = Collections.singletonList(new Change(file, range, replacement));
+	/**
+	 * Constructs a fix with a diagnostics name and a list of multiple changes.
+	 * This will be used in clang-tidy 4.0 and upper.
+	 * @param diagnosticName	The diagnostics name which produced this fix.
+	 * @param changes			A list of changes produced for this fix.
+	 */
+	public Fix(@NotNull String diagnosticName, @NotNull List<Change> changes) {
+		this.diagnosticName		= diagnosticName;
+		this.changes			= changes;
+	}
+
+
+	/**
+	 * Constructs a fix based on a single change.
+	 * This is the case in clang-tidy before 4.0.
+	 * @param change			The change of this fix.
+	 */
+	public Fix(@NotNull Change change) {
+		changes = Collections.singletonList(change);
 	}
 
 

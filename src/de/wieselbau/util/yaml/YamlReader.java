@@ -39,7 +39,8 @@ import java.util.Map;
  */
 public class YamlReader {
 	private File				file			= null;
-	private InputStreamReader	reader			= null;
+	private TrackCaretReader	caretReader		= null;
+	private Reader				reader			= null;
 	private StreamTokenizer		tokenizer		= null;
 	private Object				rootObject		= null;
 
@@ -73,7 +74,10 @@ public class YamlReader {
 	private Object read(InputStream in) throws IOException {
 		Object data = null;
 
-		reader = new InputStreamReader(in);
+		InputStreamReader sr = new InputStreamReader(in);
+
+		caretReader = new TrackCaretReader(sr);
+		reader = caretReader;
 
 		tokenizer = new StreamTokenizer(reader);
 		tokenizer.resetSyntax();
@@ -102,6 +106,7 @@ public class YamlReader {
 		finally {
 			in.close();
 
+			caretReader = null;
 			tokenizer = null;
 			reader = null;
 		}
@@ -166,11 +171,24 @@ public class YamlReader {
 	private List<Object> readList() throws IOException {
 		List<Object> list = new ArrayList<>();
 
+		// store the indent of the first token
+		expect('-');
+		final int originalIndent = caretReader.getColumn();
+		tokenizer.pushBack();
+
 		parserLoop: do {
 			switch(tokenizer.nextToken()) {
 				case '-': {
+					int currentIndent = caretReader.getColumn();
+
+					if (currentIndent < originalIndent) {
+						tokenizer.pushBack();
+						break parserLoop;
+					}
+
 					Object element = readData();
 					list.add(element);
+
 					break;
 				}
 
