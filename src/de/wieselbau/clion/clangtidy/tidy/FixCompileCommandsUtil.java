@@ -43,8 +43,8 @@ public class FixCompileCommandsUtil {
 		CMakeSettings settings = workspace.getSettings();
 		final String option = "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON";
 
-		for (CMakeSettings.Configuration configuration : settings.getConfigurations()) {
-			String options = configuration.getGenerationOptions();
+		for (CMakeSettings.Profile profile : settings.getProfiles()) {
+			String options = profile.getGenerationOptions();
 
 			if (options == null) {
 				return true;
@@ -88,13 +88,13 @@ public class FixCompileCommandsUtil {
 		CMakeSettings settings = workspace.getSettings();
 		final String option = "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON";
 
-		List<CMakeSettings.Configuration> configurations = settings.getConfigurations();
-		List<CMakeSettings.Configuration> new_configurations = null;
+		List<CMakeSettings.Profile> profiles = settings.getProfiles();
+		List<CMakeSettings.Profile> new_profiles = null;
 		boolean configurationsChanged = false;
 
-		for (int i = 0; i < configurations.size(); i++) {
-			CMakeSettings.Configuration configuration = configurations.get(i);
-			String options = configuration.getGenerationOptions();
+		for (int i = 0; i < profiles.size(); i++) {
+			CMakeSettings.Profile profile = profiles.get(i);
+			String options = profile.getGenerationOptions();
 			boolean update = false;
 
 			if (options == null) {
@@ -107,22 +107,22 @@ public class FixCompileCommandsUtil {
 			}
 
 			if (update) {
-				CMakeSettings.Configuration new_configuration = configuration.withGenerationOptions(options);
+				CMakeSettings.Profile new_profile = profile.withGenerationOptions(options);
 
-				if (new_configurations == null) {
-					new_configurations = new ArrayList<>(configurations.size());
-					new_configurations.addAll(configurations);
+				if (new_profiles == null) {
+					new_profiles = new ArrayList<>(profiles.size());
+					new_profiles.addAll(profiles);
 				}
 
-				new_configurations.set(i, new_configuration);
+				new_profiles.set(i, new_profile);
 				configurationsChanged = true;
 			}
 		}
 
 		if (configurationsChanged) {
-			final List<CMakeSettings.Configuration> set_configurations = new_configurations;
+			final List<CMakeSettings.Profile> set_profiles = new_profiles;
 			ApplicationManager.getApplication().runWriteAction(() -> {
-				settings.setConfigurations(set_configurations);
+				settings.setProfiles(set_profiles);
 			});
 		}
 	}

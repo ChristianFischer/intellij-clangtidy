@@ -26,12 +26,14 @@ import com.intellij.ide.util.PropertiesComponent;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.openapi.vfs.VirtualFile;
+import com.jetbrains.cidr.lang.daemon.clang.tidy.ClangTidyAnnotator;
 import de.wieselbau.clion.clangtidy.tidy.ToolCollection;
 import de.wieselbau.clion.clangtidy.tidy.ToolController;
 import de.wieselbau.util.properties.TypeConverter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.File;
 import java.util.Objects;
 
 /**
@@ -54,6 +56,12 @@ public class Options {
 	public static String getCLangTidyExe() {
 		// todo: default path on unix - add proper path for windows
 		String defaultValue = "/usr/bin/clang-tidy";
+
+		//
+		File defaultTidyFile = ClangTidyAnnotator.getBuiltinClangTidyPath();
+		if (defaultTidyFile != null) {
+			defaultValue = defaultTidyFile.getAbsolutePath();
+		}
 
 		return properties.getValue(OPTION_KEY_CLANGTIDY_EXE, defaultValue);
 	}
