@@ -1,7 +1,7 @@
 <idea-plugin>
   <id>de.wieselbau.clion.clangtidy</id>
   <name>CLion clang-tidy integration</name>
-  <version>1.2.1</version>
+  <version>1.2.2</version>
   <vendor
           email="baldur@wieselbau.de"
           url="http://www.bitbucket.com/baldur/clion-clangtidy"
@@ -50,15 +50,14 @@ To learn more about clang-tidy visit
 
   <change-notes><![CDATA[
 <p>
-  <b>Version 1.2.1</b><br/>
+  <b>Version 1.2.2</b><br/>
   <ul>
-    <li>Migrated to CLion 2017.3</li>
-    <li>Now uses CLion's bundled clang-tidy by default</li>
+    <li>Migrated to CLion 2018.1</li>
   </ul>
 </p>
 ]]></change-notes>
 
-  <idea-version since-build="173.0"/>
+  <idea-version since-build="181.0"/>
 
   <depends>com.intellij.modules.clion</depends>
 

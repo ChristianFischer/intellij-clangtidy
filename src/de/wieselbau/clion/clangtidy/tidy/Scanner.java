@@ -22,15 +22,12 @@
 
 package de.wieselbau.clion.clangtidy.tidy;
 
-import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.util.Computable;
+import com.intellij.openapi.util.Pair;
 import com.intellij.openapi.vfs.VirtualFile;
-import com.jetbrains.cidr.cpp.cmake.workspace.CMakeResolveConfiguration;
+import com.jetbrains.cidr.cpp.cmake.CMakeSettings;
 import com.jetbrains.cidr.cpp.cmake.workspace.CMakeWorkspace;
-import com.jetbrains.cidr.lang.preprocessor.OCInclusionContextUtil;
-import com.jetbrains.cidr.lang.workspace.OCResolveConfiguration;
 import de.wieselbau.clion.clangtidy.NotificationFactory;
 import de.wieselbau.clion.clangtidy.Options;
 import de.wieselbau.util.properties.PropertiesContainer;
@@ -110,31 +107,35 @@ public class Scanner {
 
 
 	private File findCompileCommandsForFile(@NotNull VirtualFile file) throws CompileCommandsNotFoundException {
-		File compileCommandsFile = ApplicationManager.getApplication().runReadAction((Computable<File>) () -> {
-			OCResolveConfiguration configuration = OCInclusionContextUtil.getActiveConfiguration(file, project);
+		List<CMakeSettings.Profile> profiles = cMakeWorkspace.getSettings().getProfiles();
 
-			File configDir = null;
+		// select the first configuration in the list
+		// todo: find out, which is the active configuration for the current project
 
-			if (configuration instanceof CMakeResolveConfiguration) {
-				configDir = ((CMakeResolveConfiguration) configuration).getConfiguration().getConfigurationGenerationDir();
-			}
-
-			if (configDir == null) {
-				return null;
-			}
-
-			return new File(configDir.getAbsolutePath() + "/compile_commands.json");
-		});
-
-		if (!compileCommandsFile.exists()) {
-			throw new CompileCommandsNotFoundException(cMakeWorkspace);
+		List<Pair<String,File>> generationDirParameters = new ArrayList<>(profiles.size());
+		for(CMakeSettings.Profile profile : profiles) {
+			generationDirParameters.add(new Pair<>(profile.getName(), null));
 		}
 
-		if (FixCompileCommandsUtil.needsToFixWindowsPaths(compileCommandsFile)) {
-			FixCompileCommandsUtil.fixWindowsPaths(compileCommandsFile);
+		// try all profiles to find any containing a compile_commands.json
+		for(File generationDir : cMakeWorkspace.getEffectiveProfileGenerationDirs(generationDirParameters)) {
+			if (!generationDir.exists()) {
+				continue;
+			}
+
+			File compileCommandsFile = new File(generationDir.getAbsolutePath() + "/compile_commands.json");
+			if (!compileCommandsFile.exists()) {
+				continue;
+			}
+
+			if (FixCompileCommandsUtil.needsToFixWindowsPaths(compileCommandsFile)) {
+				FixCompileCommandsUtil.fixWindowsPaths(compileCommandsFile);
+			}
+
+			return compileCommandsFile;
 		}
 
-		return compileCommandsFile;
+		throw new CompileCommandsNotFoundException(cMakeWorkspace);
 	}
 
 
