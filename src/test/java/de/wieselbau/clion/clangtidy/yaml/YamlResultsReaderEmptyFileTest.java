@@ -24,10 +24,10 @@ package de.wieselbau.clion.clangtidy.yaml;
 
 import de.wieselbau.util.yaml.YamlReader;
 
-import java.io.File;
 import java.util.List;
 import java.util.Map;
 
+import static de.wieselbau.clion.clangtidy.TestUtils.getTestFile;
 import static org.junit.Assert.*;
 
 /**
@@ -36,7 +36,7 @@ import static org.junit.Assert.*;
 public class YamlResultsReaderEmptyFileTest extends AbstractTidyResultsYamlReaderTest
 {
 	public YamlResultsReaderEmptyFileTest() {
-		super(new File("tests/resources/yaml/empty_results.yaml"));
+		super(getTestFile("yaml/empty_results.yaml"));
 	}
 
 

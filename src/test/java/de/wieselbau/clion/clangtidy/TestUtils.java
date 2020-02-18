@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016
+ * Copyright (C) 2020
  * Christian Fischer
  *
  * https://bitbucket.org/baldur/clion-clangtidy/
@@ -20,34 +20,28 @@
  * Boston, MA 02110-1301 USA
  */
 
-package de.wieselbau.clion.clangtidy.yaml;
+package de.wieselbau.clion.clangtidy;
 
-import de.wieselbau.util.yaml.YamlReader;
+import de.wieselbau.clion.clangtidy.results.AbstractTidyResultsTest;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
-import java.util.List;
+import java.util.Objects;
 
-import static org.junit.Assert.*;
 
 /**
- * Test a completely empty yaml structure
+ * A collection of utility functions to help on running tests.
  */
-public class YamlEmptyFileTest extends AbstractTidyResultsYamlReaderTest
-{
-	public YamlEmptyFileTest() {
-		super(new File("tests/resources/yaml/empty.yaml"));
-	}
-
-
-	@Override
-	protected void testYamlResults(YamlReader yaml) throws Exception {
-		assertNotNull(yaml);
-		assertNull(yaml.getRootObject());
-	}
-
-
-	@Override
-	protected void testReplacementsList(List replacements) throws Exception {
-		fail("unexpected");
+public class TestUtils {
+	/**
+	 * Reads a file with a given name from the test resources folder.
+	 * @param filename The filename and path relative to the test resources root
+	 * @return A file object for the requested file.
+	 * @throws NullPointerException when the requested resource was not found.
+	 */
+	public static @NotNull File getTestFile(@NotNull String filename) {
+		ClassLoader classLoader = AbstractTidyResultsTest.class.getClassLoader();
+		String f = Objects.requireNonNull(classLoader.getResource(filename)).getFile();
+		return new File(f);
 	}
 }

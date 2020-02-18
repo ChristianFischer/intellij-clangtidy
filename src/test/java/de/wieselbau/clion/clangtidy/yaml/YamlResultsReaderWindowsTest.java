@@ -22,20 +22,20 @@
 
 package de.wieselbau.clion.clangtidy.yaml;
 
-import java.io.File;
 import java.util.List;
 import java.util.Map;
 
+import static de.wieselbau.clion.clangtidy.TestUtils.getTestFile;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 /**
- * Test for a clang-tidy result on unix
+ * Test for a result of clang-tidy on windows
  */
-public class YamlResultsReaderUnixTest extends AbstractTidyResultsYamlReaderTest
+public class YamlResultsReaderWindowsTest extends AbstractTidyResultsYamlReaderTest
 {
-	public YamlResultsReaderUnixTest() {
-		super(new File("tests/resources/yaml/results_unix.yaml"));
+	public YamlResultsReaderWindowsTest() {
+		super(getTestFile("yaml/results_windows.yaml"));
 	}
 
 
@@ -59,7 +59,7 @@ public class YamlResultsReaderUnixTest extends AbstractTidyResultsYamlReaderTest
 		// FilePath
 		assertTrue(replacement.containsKey("FilePath"));
 		assertTrue(replacement.get("FilePath") instanceof String);
-		assertEquals("/home/sweet/home/my/SourceFile.cpp", replacement.get("FilePath"));
+		assertEquals("D:/Path/to/my/SourceFile.cpp", replacement.get("FilePath"));
 
 		// Offset
 		assertTrue(replacement.containsKey("Offset"));
@@ -88,7 +88,7 @@ public class YamlResultsReaderUnixTest extends AbstractTidyResultsYamlReaderTest
 		// FilePath
 		assertTrue(replacement.containsKey("FilePath"));
 		assertTrue(replacement.get("FilePath") instanceof String);
-		assertEquals("/home/sweet/home/my/SourceFile.cpp", replacement.get("FilePath"));
+		assertEquals("D:\\Path\\to\\my\\SourceFile.cpp", replacement.get("FilePath"));
 
 		// Offset
 		assertTrue(replacement.containsKey("Offset"));
@@ -117,7 +117,7 @@ public class YamlResultsReaderUnixTest extends AbstractTidyResultsYamlReaderTest
 		// FilePath
 		assertTrue(replacement.containsKey("FilePath"));
 		assertTrue(replacement.get("FilePath") instanceof String);
-		assertEquals("/home/123/0.h", replacement.get("FilePath"));
+		assertEquals("D:/123/0.h", replacement.get("FilePath"));
 
 		// Offset
 		assertTrue(replacement.containsKey("Offset"));

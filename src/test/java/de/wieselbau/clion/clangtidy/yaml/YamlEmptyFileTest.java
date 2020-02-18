@@ -23,54 +23,31 @@
 package de.wieselbau.clion.clangtidy.yaml;
 
 import de.wieselbau.util.yaml.YamlReader;
-import org.junit.Assert;
 
-import java.io.File;
 import java.util.List;
-import java.util.Map;
 
+import static de.wieselbau.clion.clangtidy.TestUtils.getTestFile;
 import static org.junit.Assert.*;
 
 /**
- * Test basic yaml syntax and parsing functionality.
+ * Test a completely empty yaml structure
  */
-public class YamlSyntaxTest extends AbstractTidyResultsYamlReaderTest {
-
-	public YamlSyntaxTest() {
-		super(new File("tests/resources/yaml/syntax_test.yaml"));
+public class YamlEmptyFileTest extends AbstractTidyResultsYamlReaderTest
+{
+	public YamlEmptyFileTest() {
+		super(getTestFile("yaml/empty.yaml"));
 	}
 
 
 	@Override
 	protected void testYamlResults(YamlReader yaml) throws Exception {
 		assertNotNull(yaml);
-		assertNotNull(yaml.getRootObject());
-
-		// we expect the root object to be a map
-		assertTrue(yaml.getRootObject() instanceof Map);
-
-		@SuppressWarnings("unchecked")
-		Map<String,Object> map = (Map<String,Object>)yaml.getRootObject();
-
-		assertTrue(map.containsKey("PlainText"));
-		assertEquals("JustSomeText",		map.get("PlainText"));
-
-		assertTrue(map.containsKey("QuotedString1"));
-		assertEquals("Some other text 1",	map.get("QuotedString1"));
-
-		assertTrue(map.containsKey("QuotedString2"));
-		assertEquals("Some other text 2",	map.get("QuotedString2"));
-
-		assertTrue(map.containsKey("EscapedCharacters"));
-		assertEquals("contains escaped characters: \n \" \\ \'",					map.get("EscapedCharacters"));
-
-		assertTrue(map.containsKey("NotEscapedCharacters"));
-		assertEquals("does not contain escaped characters: \" \\n \\\" \\\\ \\",	map.get("NotEscapedCharacters"));
+		assertNull(yaml.getRootObject());
 	}
 
 
 	@Override
 	protected void testReplacementsList(List replacements) throws Exception {
-		Assert.fail(); // not used here
+		fail("unexpected");
 	}
 }

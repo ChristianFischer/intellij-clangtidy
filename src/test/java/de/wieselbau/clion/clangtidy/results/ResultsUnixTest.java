@@ -27,9 +27,9 @@ import de.wieselbau.clion.clangtidy.tidy.ScannerResult;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
-import java.io.File;
 import java.util.List;
 
+import static de.wieselbau.clion.clangtidy.TestUtils.getTestFile;
 import static org.junit.Assert.*;
 
 
@@ -40,7 +40,7 @@ public class ResultsUnixTest extends AbstractTidyResultsTest {
 
 	@Test
 	public void parseResults() {
-		ScannerResult result = parseResultsFromFile(new File("tests/resources/yaml/results_unix.yaml"));
+		ScannerResult result = parseResultsFromFile(getTestFile("yaml/results_unix.yaml"));
 		assertNotNull(result);
 
 		List<Fix> fixes = result.getFixes();

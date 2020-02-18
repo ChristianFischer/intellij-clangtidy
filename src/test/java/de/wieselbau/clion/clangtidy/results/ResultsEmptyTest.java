@@ -27,9 +27,9 @@ import de.wieselbau.clion.clangtidy.tidy.ScannerResult;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
-import java.io.File;
 import java.util.List;
 
+import static de.wieselbau.clion.clangtidy.TestUtils.getTestFile;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
@@ -41,7 +41,7 @@ public class ResultsEmptyTest extends AbstractTidyResultsTest {
 
 	@Test
 	public void parseResults() {
-		ScannerResult result = parseResultsFromFile(new File("tests/resources/yaml/empty_results.yaml"));
+		ScannerResult result = parseResultsFromFile(getTestFile("yaml/empty_results.yaml"));
 		assertNotNull(result);
 
 		List<Fix> fixes = result.getFixes();

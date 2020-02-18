@@ -27,21 +27,20 @@ import de.wieselbau.clion.clangtidy.tidy.ScannerResult;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
-import java.io.File;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static de.wieselbau.clion.clangtidy.TestUtils.getTestFile;
+import static org.junit.Assert.*;
 
 
 /**
- * Test for a clang-tidy 4.0 result on windows
+ * Test for a clang-tidy result on windows
  */
-public class ResultsWindows40Test extends AbstractTidyResultsTest {
+public class ResultsWindowsTest extends AbstractTidyResultsTest {
 
 	@Test
 	public void parseResults() {
-		ScannerResult result = parseResultsFromFile(new File("tests/resources/yaml/results_windows_4.0.yaml"));
+		ScannerResult result = parseResultsFromFile(getTestFile("yaml/results_windows.yaml"));
 		assertNotNull(result);
 
 		List<Fix> fixes = result.getFixes();
@@ -61,49 +60,12 @@ public class ResultsWindows40Test extends AbstractTidyResultsTest {
 
 
 	private void testFix1(@NotNull Fix fix) {
-		assertEquals("modernize-use-equals-default", fix.getDiagnosticName());
+		assertNull(fix.getDiagnosticName());
 		assertEquals(1, fix.getChanges().size());
 		testFix1Change1(fix.getChanges().get(0));
 	}
 
 	private void testFix1Change1(@NotNull Fix.Change change) {
-		assertNotNull(change.getFile());
-		assertEquals("D:\\Path\\to\\my\\SourceFile.cpp", asWindowsPath(change.getFile()));
-
-		assertNotNull(change.getTextRange());
-		assertEquals(31, change.getTextRange().getStartOffset());
-		assertEquals(8, change.getTextRange().getLength());
-
-		assertEquals("= default;", change.getReplacement());
-	}
-
-
-	private void testFix2(@NotNull Fix fix) {
-		assertEquals("modernize-redundant-void-arg", fix.getDiagnosticName());
-		assertEquals(1, fix.getChanges().size());
-		testFix2Change1(fix.getChanges().get(0));
-	}
-
-	private void testFix2Change1(@NotNull Fix.Change change) {
-		assertNotNull(change.getFile());
-		assertEquals("D:\\Path\\to\\my\\SourceFile.cpp", asWindowsPath(change.getFile()));
-
-		assertNotNull(change.getTextRange());
-		assertEquals(57, change.getTextRange().getStartOffset());
-		assertEquals(4, change.getTextRange().getLength());
-
-		assertEquals("", change.getReplacement());
-	}
-
-
-	private void testFix3(@NotNull Fix fix) {
-		assertEquals("modernize-loop-convert", fix.getDiagnosticName());
-		assertEquals(2, fix.getChanges().size());
-		testFix3Change1(fix.getChanges().get(0));
-		testFix3Change2(fix.getChanges().get(1));
-	}
-
-	private void testFix3Change1(@NotNull Fix.Change change) {
 		assertNotNull(change.getFile());
 		assertEquals("D:\\Path\\to\\my\\SourceFile.cpp", asWindowsPath(change.getFile()));
 
@@ -114,7 +76,14 @@ public class ResultsWindows40Test extends AbstractTidyResultsTest {
 		assertEquals("(int i : arr)", change.getReplacement());
 	}
 
-	private void testFix3Change2(@NotNull Fix.Change change) {
+
+	private void testFix2(@NotNull Fix fix) {
+		assertNull(fix.getDiagnosticName());
+		assertEquals(1, fix.getChanges().size());
+		testFix2Change1(fix.getChanges().get(0));
+	}
+
+	private void testFix2Change1(@NotNull Fix.Change change) {
 		assertNotNull(change.getFile());
 		assertEquals("D:\\Path\\to\\my\\SourceFile.cpp", asWindowsPath(change.getFile()));
 
@@ -123,5 +92,23 @@ public class ResultsWindows40Test extends AbstractTidyResultsTest {
 		assertEquals(6, change.getTextRange().getLength());
 
 		assertEquals("i", change.getReplacement());
+	}
+
+
+	private void testFix3(@NotNull Fix fix) {
+		assertNull(fix.getDiagnosticName());
+		assertEquals(1, fix.getChanges().size());
+		testFix3Change1(fix.getChanges().get(0));
+	}
+
+	private void testFix3Change1(@NotNull Fix.Change change) {
+		assertNotNull(change.getFile());
+		assertEquals("D:\\123\\0.h", asWindowsPath(change.getFile()));
+
+		assertNotNull(change.getTextRange());
+		assertEquals(456, change.getTextRange().getStartOffset());
+		assertEquals(4, change.getTextRange().getLength());
+
+		assertEquals("nullptr", change.getReplacement());
 	}
 }
